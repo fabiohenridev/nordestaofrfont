@@ -35,7 +35,7 @@
   </div>
 
   <script>
-    const url = 'https://pedidosnordestao.onrender.com/pedidos'; // A URL correta com '/pedidos'
+    const url = 'https://pedidosnordestao.onrender.com/pedidos';
     const enviarBtn = document.getElementById('enviarBtn');
     const loadingDiv = document.getElementById('loading');
     const errorDiv = document.getElementById('error');
@@ -65,7 +65,7 @@
   
       showLoading();
       try {
-        const res = await fetch(url, { // Aqui deve ser feita a requisição para a URL com '/pedidos'
+        const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ descricao })
@@ -85,7 +85,7 @@
     async function deletarPedido(id) {
       showLoading();
       try {
-        const res = await fetch(`${url}/${id}`, { method: 'DELETE' }); // Aqui também
+        const res = await fetch(`${url}/${id}`, { method: 'DELETE' });
         if (!res.ok) throw new Error('Erro ao deletar pedido');
         await buscarPedidos();
       } catch (error) {
@@ -98,7 +98,7 @@
     async function buscarPedidos() {
       showLoading();
       try {
-        const res = await fetch(url); // A URL correta com '/pedidos'
+        const res = await fetch(url);
         if (!res.ok) throw new Error('Erro ao buscar pedidos');
         const data = await res.json();
         
@@ -114,7 +114,7 @@
           const el = document.createElement('div');
           el.className = 'flex justify-between items-center bg-gray-50 p-3 rounded-lg';
           el.innerHTML = `
-            <span class="text-gray-700">${p.descricao}</span>
+            <span class="text-gray-700 max-w-[80%] overflow-wrap-break-word word-break-break-word">${p.descricao}</span>
             <button 
               onclick="deletarPedido('${p._id}')" 
               class="text-red-500 hover:text-red-700"
