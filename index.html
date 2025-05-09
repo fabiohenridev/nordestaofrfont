@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pedidos</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Favicon -->
   <link rel="icon" href="nordestao.png" type="image/png" />
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
@@ -112,12 +113,12 @@
   
         data.forEach(p => {
           const el = document.createElement('div');
-          el.className = 'flex justify-between items-center bg-gray-50 p-3 rounded-lg';
+          el.className = 'flex justify-between items-start bg-gray-50 p-3 rounded-lg';
           el.innerHTML = `
-            <span class="text-gray-700 max-w-[80%] overflow-wrap-break-word word-break-break-word">${p.descricao}</span>
+            <span class="text-gray-700 break-words w-full mr-4">${p.descricao}</span>
             <button 
               onclick="deletarPedido('${p._id}')" 
-              class="text-red-500 hover:text-red-700"
+              class="text-red-500 hover:text-red-700 whitespace-nowrap"
             >
               Deletar
             </button>
