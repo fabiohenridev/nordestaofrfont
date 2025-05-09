@@ -34,42 +34,42 @@
   </div>
 
   <script>
-    const url = 'https://pedidosnordestao.onrender.com/pedidos'; // Atualizado para incluir '/pedidos'
+    const url = 'https://pedidosnordestao.onrender.com/pedidos'; // A URL correta com '/pedidos'
     const enviarBtn = document.getElementById('enviarBtn');
     const loadingDiv = document.getElementById('loading');
     const errorDiv = document.getElementById('error');
-
+  
     function showLoading() {
       loadingDiv.classList.remove('hidden');
       enviarBtn.disabled = true;
     }
-
+  
     function hideLoading() {
       loadingDiv.classList.add('hidden');
       enviarBtn.disabled = false;
     }
-
+  
     function showError(message) {
       errorDiv.textContent = message;
       errorDiv.classList.remove('hidden');
       setTimeout(() => errorDiv.classList.add('hidden'), 3000);
     }
-
+  
     async function enviarPedido() {
       const descricao = document.getElementById('descricao').value.trim();
       if (!descricao) {
         showError('Digite uma descrição');
         return;
       }
-
+  
       showLoading();
       try {
-        const res = await fetch(url, {
+        const res = await fetch(url, { // Aqui deve ser feita a requisição para a URL com '/pedidos'
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ descricao })
         });
-
+  
         if (!res.ok) throw new Error('Erro ao enviar pedido');
         
         document.getElementById('descricao').value = '';
@@ -80,11 +80,11 @@
         hideLoading();
       }
     }
-
+  
     async function deletarPedido(id) {
       showLoading();
       try {
-        const res = await fetch(`${url}/${id}`, { method: 'DELETE' });
+        const res = await fetch(`${url}/${id}`, { method: 'DELETE' }); // Aqui também
         if (!res.ok) throw new Error('Erro ao deletar pedido');
         await buscarPedidos();
       } catch (error) {
@@ -93,11 +93,11 @@
         hideLoading();
       }
     }
-
+  
     async function buscarPedidos() {
       showLoading();
       try {
-        const res = await fetch(url);
+        const res = await fetch(url); // A URL correta com '/pedidos'
         if (!res.ok) throw new Error('Erro ao buscar pedidos');
         const data = await res.json();
         
@@ -108,7 +108,7 @@
           pedidosDiv.innerHTML += '<p class="text-gray-500">Nenhum pedido encontrado</p>';
           return;
         }
-
+  
         data.forEach(p => {
           const el = document.createElement('div');
           el.className = 'flex justify-between items-center bg-gray-50 p-3 rounded-lg';
@@ -129,8 +129,9 @@
         hideLoading();
       }
     }
-
+  
     buscarPedidos();
   </script>
+  
 </body>
 </html>
