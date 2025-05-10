@@ -10,8 +10,8 @@
   <div class="max-w-2xl w-full bg-white rounded-lg shadow-lg p-6">
     <h1 class="text-2xl font-bold text-gray-800 mb-6">Fazer Pedido</h1>
 
-    <div class="flex flex-col sm:flex-row gap-3 mb-3">
-      <input type="text" id="numeroCompra" placeholder="Número da compra (opcional)"
+    <div class="flex flex-col sm:flex-row gap-3 mb-6">
+      <input type="text" id="numero" placeholder="Número da compra"
              class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
       <input type="text" id="descricao" placeholder="Descreva seu pedido"
              class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
@@ -48,28 +48,20 @@
       setTimeout(() => errorDiv.classList.add('hidden'), 3000);
     }
 
-    function gerarNumeroCompra() {
-      const agora = new Date();
-      return `#${agora.getTime().toString().slice(-6)}`;
-    }
-
     async function enviarPedido() {
+      const numero = document.getElementById('numero').value.trim();
       const desc = document.getElementById('descricao').value.trim();
-      let numeroCompra = document.getElementById('numeroCompra').value.trim();
-
-      if (!desc) return showError('Digite uma descrição');
-      if (!numeroCompra) numeroCompra = gerarNumeroCompra();
-
+      if (!numero || !desc) return showError('Preencha todos os campos');
       showLoading();
       try {
         const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ numeroCompra, descricao: desc })
+          body: JSON.stringify({ numeroCompra: numero, descricao: desc })
         });
         if (!res.ok) throw new Error();
+        document.getElementById('numero').value = '';
         document.getElementById('descricao').value = '';
-        document.getElementById('numeroCompra').value = '';
         await buscarPedidos();
       } catch {
         showError('Erro ao enviar pedido');
