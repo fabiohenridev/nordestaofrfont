@@ -46,15 +46,21 @@
       setTimeout(() => errorDiv.classList.add('hidden'), 3000);
     }
 
+    function gerarNumeroCompra() {
+      const agora = new Date();
+      return `#${agora.getTime().toString().slice(-6)}`;
+    }
+
     async function enviarPedido() {
       const desc = document.getElementById('descricao').value.trim();
       if (!desc) return showError('Digite uma descrição');
       showLoading();
       try {
+        const numeroCompra = gerarNumeroCompra();
         const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ descricao: desc })
+          body: JSON.stringify({ numeroCompra, descricao: desc })
         });
         if (!res.ok) throw new Error();
         document.getElementById('descricao').value = '';
@@ -123,11 +129,13 @@
           const el = document.createElement('div');
           el.className = 'flex flex-col sm:flex-row justify-between items-start bg-gray-50 p-3 rounded-lg gap-2';
 
-          // descrição + deletar
+          // descrição + número + deletar
           el.innerHTML = `
-            <span class="text-gray-700 flex-1">${p.descricao}</span>
-            <button onclick="deletarPedido('${p._id}')"
-                    class="text-red-500 hover:text-red-700">Deletar</button>
+            <div class="flex-1">
+              <div class="text-gray-700 font-semibold">${p.numeroCompra}</div>
+              <div class="text-gray-700">${p.descricao}</div>
+            </div>
+            <button onclick="deletarPedido('${p._id}')" class="text-red-500 hover:text-red-700">Deletar</button>
           `;
 
           const tempoSpan = document.createElement('span');
@@ -135,8 +143,6 @@
 
           if (!finalizadoEm) {
             el.appendChild(tempoSpan);
-
-            // limpa cronômetro anterior
             if (cronometros[p._id]) clearInterval(cronometros[p._id]);
 
             cronometros[p._id] = setInterval(() => {
@@ -149,7 +155,6 @@
             btnF.className = 'text-green-600 hover:text-green-800';
             btnF.onclick = () => finalizarPedido(p._id);
             el.appendChild(btnF);
-
           } else {
             const diff = Math.floor((finalizadoEm - criadoEm) / 1000);
             tempoSpan.textContent = `✅ Finalizado em ${formatarTempo(diff)}`;
