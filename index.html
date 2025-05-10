@@ -40,118 +40,146 @@
     </div>
   </div>
 
- <script>
-  const url = 'https://pedidosnordestao.onrender.com/pedidos';
-  const enviarBtn = document.getElementById('enviarBtn');
-  const loadingDiv = document.getElementById('loading');
-  const errorDiv = document.getElementById('error');
+  <script>
+    const url = 'https://pedidosnordestao.onrender.com/pedidos';
+    const enviarBtn = document.getElementById('enviarBtn');
+    const loadingDiv = document.getElementById('loading');
+    const errorDiv = document.getElementById('error');
 
-  function showLoading() {
-    loadingDiv.classList.remove('hidden');
-    enviarBtn.disabled = true;
-  }
-  function hideLoading() {
-    loadingDiv.classList.add('hidden');
-    enviarBtn.disabled = false;
-  }
-  function showError(msg) {
-    errorDiv.textContent = msg;
-    errorDiv.classList.remove('hidden');
-    setTimeout(() => errorDiv.classList.add('hidden'), 3000);
-  }
-
-  // Em vez de deletar do banco, só remove do DOM (apenas UI)
-  function deletarPedidoUI(el, isFinalizado) {
-    if (isFinalizado) {
-      const ok = confirm('Este pedido já está finalizado. Tem certeza que deseja removê-lo da tela?');
-      if (!ok) return;
+    function showLoading() {
+      loadingDiv.classList.remove('hidden');
+      enviarBtn.disabled = true;
     }
-    el.remove();
-  }
+    function hideLoading() {
+      loadingDiv.classList.add('hidden');
+      enviarBtn.disabled = false;
+    }
+    function showError(msg) {
+      errorDiv.textContent = msg;
+      errorDiv.classList.remove('hidden');
+      setTimeout(() => errorDiv.classList.add('hidden'), 3000);
+    }
 
-  async function enviarPedido() {
-    // ... fica igual ...
-  }
-
-  async function finalizarPedido(id) {
-    // ... fica igual, dispara PATCH e recarrega lista ...
-  }
-
-  function formatarTempo(seg) {
-    // ... fica igual ...
-  }
-
-  const cronometros = {};
-
-  async function buscarPedidos() {
-    showLoading();
-    try {
-      const res  = await fetch(url);
-      const data = await res.json();
-
-      const container = document.getElementById('pedidos');
-      container.innerHTML = '<h2 class="text-xl font-semibold text-gray-700">Pedidos Recebidos</h2>';
-      if (data.length === 0) {
-        container.innerHTML += '<p class="text-gray-500">Nenhum pedido encontrado</p>';
-        return;
+    async function enviarPedido() {
+      const numero = document.getElementById('numeroCompra').value.trim();
+      const desc   = document.getElementById('descricao').value.trim();
+      if (!numero || !desc) {
+        return showError('Preencha número da compra e descrição');
       }
-
-      data.forEach(p => {
-        const criadoEm   = new Date(p.criadoEm);
-        const finalizado = p.finalizadoEm ? new Date(p.finalizadoEm) : null;
-
-        // Cria o card
-        const el = document.createElement('div');
-        el.className = 'flex flex-col gap-1 bg-gray-50 p-3 rounded-lg';
-
-        // Conteúdo: número da compra + descrição
-        el.innerHTML = `
-          <div class="font-bold">Compra: ${p.numeroCompra}</div>
-          <div>${p.descricao}</div>
-        `;
-
-        // Cronômetro ou tempo finalizado
-        const tempoSpan = document.createElement('span');
-        tempoSpan.className = 'text-sm text-blue-600 font-mono';
-
-        if (!finalizado) {
-          el.appendChild(tempoSpan);
-          if (cronometros[p._id]) clearInterval(cronometros[p._id]);
-          cronometros[p._id] = setInterval(() => {
-            const diff = Math.floor((Date.now() - criadoEm.getTime()) / 1000);
-            tempoSpan.textContent = `⏱️ Tempo: ${formatarTempo(diff)}`;
-          }, 1000);
-
-          const btnF = document.createElement('button');
-          btnF.textContent = 'Finalizar';
-          btnF.className = 'text-green-600 hover:text-green-800 mt-1';
-          btnF.onclick = () => finalizarPedido(p._id);
-          el.appendChild(btnF);
-        } else {
-          const diff = Math.floor((finalizado - criadoEm) / 1000);
-          tempoSpan.textContent = `✅ Finalizado em ${formatarTempo(diff)}`;
-          el.appendChild(tempoSpan);
-        }
-
-        // Botão Deletar: chama apenas a UI
-        const btnD = document.createElement('button');
-        btnD.textContent = 'Deletar';
-        btnD.className = 'text-red-500 hover:text-red-700 mt-1';
-        btnD.onclick = () => deletarPedidoUI(el, !!finalizado);
-        el.appendChild(btnD);
-
-        container.appendChild(el);
-      });
-
-    } catch {
-      showError('Erro ao buscar pedidos');
-    } finally {
-      hideLoading();
+      showLoading();
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ numeroCompra: numero, descricao: desc })
+        });
+        if (!res.ok) throw new Error();
+        document.getElementById('numeroCompra').value = '';
+        document.getElementById('descricao').value     = '';
+        await buscarPedidos();
+      } catch {
+        showError('Erro ao enviar pedido');
+      } finally {
+        hideLoading();
+      }
     }
-  }
 
-  buscarPedidos();
-</script>
+    async function deletarPedido(id) {
+      showLoading();
+      try {
+        const res = await fetch(`${url}/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error();
+        await buscarPedidos();
+      } catch {
+        showError('Erro ao deletar pedido');
+      } finally {
+        hideLoading();
+      }
+    }
 
+    async function finalizarPedido(id) {
+      showLoading();
+      try {
+        const res = await fetch(`${url}/${id}/finalizar`, { method: 'PATCH' });
+        if (!res.ok) throw new Error();
+        await buscarPedidos();
+      } catch {
+        showError('Erro ao finalizar pedido');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    function formatarTempo(segundos) {
+      const h = String(Math.floor(segundos / 3600)).padStart(2, '0');
+      const m = String(Math.floor((segundos % 3600) / 60)).padStart(2, '0');
+      const s = String(segundos % 60).padStart(2, '0');
+      return `${h}:${m}:${s}`;
+    }
+
+    const cronometros = {};
+
+    async function buscarPedidos() {
+      showLoading();
+      try {
+        const res  = await fetch(url);
+        const data = await res.json();
+        const container = document.getElementById('pedidos');
+        container.innerHTML = '<h2 class="text-xl font-semibold text-gray-700">Pedidos Recebidos</h2>';
+        if (data.length === 0) {
+          container.innerHTML += '<p class="text-gray-500">Nenhum pedido encontrado</p>';
+          return;
+        }
+        data.forEach(p => {
+          const criadoEm    = new Date(p.criadoEm);
+          const finalizado  = p.finalizadoEm ? new Date(p.finalizadoEm) : null;
+          const el = document.createElement('div');
+          el.className = 'flex flex-col gap-1 bg-gray-50 p-3 rounded-lg';
+
+          // exibe número da compra e descrição
+          el.innerHTML = `
+            <div class="font-bold">Compra: ${p.numeroCompra}</div>
+            <div>${p.descricao}</div>
+          `;
+
+          const tempoSpan = document.createElement('span');
+          tempoSpan.className = 'text-sm text-blue-600 font-mono';
+
+          if (!finalizado) {
+            el.appendChild(tempoSpan);
+            if (cronometros[p._id]) clearInterval(cronometros[p._id]);
+            cronometros[p._id] = setInterval(() => {
+              const diff = Math.floor((Date.now() - criadoEm.getTime()) / 1000);
+              tempoSpan.textContent = `⏱️ Tempo: ${formatarTempo(diff)}`;
+            }, 1000);
+            const btnF = document.createElement('button');
+            btnF.textContent = 'Finalizar';
+            btnF.className = 'text-green-600 hover:text-green-800 mt-1';
+            btnF.onclick = () => finalizarPedido(p._id);
+            el.appendChild(btnF);
+          } else {
+            const diff = Math.floor((finalizado - criadoEm) / 1000);
+            tempoSpan.textContent = `✅ Finalizado em ${formatarTempo(diff)}`;
+            el.appendChild(tempoSpan);
+          }
+
+          // botão deletar
+          const btnD = document.createElement('button');
+          btnD.textContent = 'Deletar';
+          btnD.className = 'text-red-500 hover:text-red-700 mt-1';
+          btnD.onclick = () => deletarPedido(p._id);
+          el.appendChild(btnD);
+
+          container.appendChild(el);
+        });
+      } catch {
+        showError('Erro ao buscar pedidos');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    buscarPedidos();
+  </script>
 </body>
 </html>
