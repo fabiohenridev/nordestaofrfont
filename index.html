@@ -62,14 +62,13 @@
       setTimeout(() => errorDiv.classList.add('hidden'), 3000);
     }
 
+    // Função para tocar o som de notificação
     function playNotificationSound() {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.value = 660;
-      osc.connect(ctx.destination);
-      osc.start();
-      setTimeout(() => osc.stop(), 150);
+      // Cria um elemento de áudio
+      const audio = new Audio('bell-notification-337658'); // Substitua pela URL do seu arquivo de áudio
+      audio.play().catch((err) => {
+        console.error('Erro ao reproduzir som:', err);
+      });
     }
 
     async function enviarPedido() {
