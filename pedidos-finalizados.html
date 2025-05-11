@@ -10,8 +10,7 @@
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
   <div class="max-w-2xl w-full bg-white rounded-lg shadow-lg p-6">
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold text-gray-800">Pedidos Finalizados</h1>
-      <!-- Botão Voltar -->
+      <h1 class="text-2xl font-bold text-gray-800">Pedidos Finalizados Hoje</h1>
       <a href="index.html"
          class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
         ← Voltar
@@ -46,11 +45,12 @@
         loadingDiv.style.display = 'none';
 
         if (!Array.isArray(data) || data.length === 0) {
-          container.innerHTML += '<p class="text-gray-500">Nenhum pedido finalizado.</p>';
+          container.innerHTML += '<p class="text-gray-500">Nenhum pedido finalizado hoje.</p>';
           return;
         }
 
         data.forEach(p => {
+          // p.criadoEm e p.finalizadoEm são Date strings serializadas
           const criadoEm     = new Date(p.criadoEm).getTime();
           const finalizadoEm = new Date(p.finalizadoEm).getTime();
           const diff         = Math.max(0, Math.floor((finalizadoEm - criadoEm) / 1000));

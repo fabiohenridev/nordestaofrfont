@@ -80,19 +80,6 @@
       }
     }
 
-    async function deletarPedido(id) {
-      showLoading();
-      try {
-        const res = await fetch(`${API}/${id}`, { method: 'DELETE' });
-        if (!res.ok) throw new Error();
-        document.getElementById(`pedido-${id}`).remove();
-      } catch {
-        showError('Erro ao deletar pedido');
-      } finally {
-        hideLoading();
-      }
-    }
-
     async function finalizarPedido(id) {
       showLoading();
       try {
@@ -153,13 +140,11 @@
               <div class="text-gray-700 font-semibold">${p.numeroCompra}</div>
               <div class="text-gray-700">${p.descricao}</div>
             </div>
-            <button onclick="deletarPedido('${p._id}')"
-                    class="text-red-500 hover:text-red-700">Deletar</button>
           `;
 
           // Span para cronômetro
           const tempoSpan = document.createElement('span');
-          tempoSpan.className = 'text-sm text-blue-600 font-mono';
+          tempoSpan.className = 'text-sm text-blue-600 font_mono';
           el.appendChild(tempoSpan);
 
           // Registra para atualização
@@ -171,7 +156,7 @@
           // Botão Finalizar
           const btnF = document.createElement('button');
           btnF.textContent = 'Finalizar';
-          btnF.className = 'text-green-600 hover:text-green-800';
+          btnF.className = 'bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-semibold';
           btnF.onclick = () => finalizarPedido(p._id);
           el.appendChild(btnF);
 
