@@ -103,6 +103,9 @@
     }
 
     function formatarTempo(segundos) {
+      if (segundos <= 0 || isNaN(segundos)) {
+        return "00:00:00";
+      }
       const h = String(Math.floor(segundos / 3600)).padStart(2, '0');
       const m = String(Math.floor((segundos % 3600) / 60)).padStart(2, '0');
       const s = String(segundos % 60).padStart(2, '0');
@@ -129,6 +132,11 @@
         data.forEach(p => {
           const criadoEm = Date.parse(p.criadoEm);
           const finalizadoEm = p.finalizadoEm ? Date.parse(p.finalizadoEm) : null;
+
+          if (isNaN(criadoEm)) {
+            showError(`Data inválida para o pedido ${p.numeroCompra}`);
+            return;
+          }
 
           const el = document.createElement('div');
           el.className = 'flex flex-col sm:flex-row justify-between items-start bg-gray-50 p-3 rounded-lg gap-2';
@@ -159,8 +167,12 @@
             btnF.onclick = () => finalizarPedido(p._id);
             el.appendChild(btnF);
           } else {
-            const diff = Math.floor((finalizadoEm - criadoEm) / 1000);
-            tempoSpan.textContent = `✅ Finalizado em ${formatarTempo(diff)}`;
+            if (isNaN(finalizadoEm) || finalizadoEm < criadoEm) {
+              tempoSpan.textContent = `✅ Finalizado em 00:00:00`;
+            } else {
+              const diff = Math.floor((finalizadoEm - criadoEm) / 1000);
+              tempoSpan.textContent = `✅ Finalizado em ${formatarTempo(diff)}`;
+            }
             el.appendChild(tempoSpan);
           }
 
