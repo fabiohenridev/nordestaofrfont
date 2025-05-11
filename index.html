@@ -1,39 +1,79 @@
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-<script>
-  const socket = io('https://pedidosnordestao.onrender.com'); // seu domínio ou localhost
-  socket.on('connect', () => console.log('🔌 Conectado ao WebSocket'));
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pedidos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="nordestao.png" type="image/png">
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+  <div class="max-w-2xl w-full bg-white rounded-lg shadow-lg p-6">
+    <h1 class="text-2xl font-bold text-gray-800 mb-6">Fazer Pedido</h1>
 
-  socket.on('novo-pedido', pedido => {
-    // Evita duplicação
-    if (seenOrders.has(pedido._id)) return;
-    seenOrders.add(pedido._id);
+    <div class="flex flex-col sm:flex-row gap-3 mb-6">
+      <input type="text" id="numero" placeholder="Número da compra"
+             class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+      <input type="text" id="descricao" placeholder="Descreva seu pedido"
+             class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+      <button onclick="enviarPedido()" id="enviarBtn"
+              class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition disabled:bg-blue-300">
+        Enviar
+      </button>
+    </div>
 
-    // Notificação sonora
-    playNotificationSound();
+    <div class="mb-6">
+      <a href="pedidos-finalizados.html" class="text-blue-600">
+        Ver pedidos finalizados
+      </a>
+    </div>
 
-    // Criar pedido novo na tela
-    const el = document.createElement('div');
-    el.id = `pedido-${pedido._id}`;
-    el.className = 'flex flex-col sm:flex-row justify-between items-start bg-gray-50 p-3 rounded-lg gap-2';
-    el.innerHTML = `
-      <div class="flex-1">
-        <div class="text-gray-700 font-semibold">${pedido.numeroCompra}</div>
-        <div class="text-gray-700">${pedido.descricao}</div>
-      </div>
-    `;
+    <div id="pedidos" class="space-y-3">
+      <h2 class="text-xl font-semibold text-gray-700">Pedidos em Andamento</h2>
+      <div id="loading" class="hidden text-gray-500">Carregando...</div>
+      <div id="error" class="hidden text-red-500"></div>
+    </div>
+  </div>
 
-    const tempoSpan = document.createElement('span');
-    tempoSpan.className = 'text-sm text-blue-600 font-mono';
-    el.appendChild(tempoSpan);
-
-    cronometros[pedido._id] = { elemento: tempoSpan, criadoEmMS: pedido.criadoEmMS };
-
-    const btnF = document.createElement('button');
-    btnF.textContent = 'Finalizar';
-    btnF.className = 'bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-semibold';
-    btnF.onclick = () => finalizarPedido(pedido._id);
-    el.appendChild(btnF);
-
-    pedidosDiv.appendChild(el);
-  });
-</script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script>
+    const socket = io('https://pedidosnordestao.onrender.com'); // seu domínio ou localhost
+    socket.on('connect', () => console.log('🔌 Conectado ao WebSocket'));
+  
+    socket.on('novo-pedido', pedido => {
+      // Evita duplicação
+      if (seenOrders.has(pedido._id)) return;
+      seenOrders.add(pedido._id);
+  
+      // Notificação sonora
+      playNotificationSound();
+  
+      // Criar pedido novo na tela
+      const el = document.createElement('div');
+      el.id = `pedido-${pedido._id}`;
+      el.className = 'flex flex-col sm:flex-row justify-between items-start bg-gray-50 p-3 rounded-lg gap-2';
+      el.innerHTML = `
+        <div class="flex-1">
+          <div class="text-gray-700 font-semibold">${pedido.numeroCompra}</div>
+          <div class="text-gray-700">${pedido.descricao}</div>
+        </div>
+      `;
+  
+      const tempoSpan = document.createElement('span');
+      tempoSpan.className = 'text-sm text-blue-600 font-mono';
+      el.appendChild(tempoSpan);
+  
+      cronometros[pedido._id] = { elemento: tempoSpan, criadoEmMS: pedido.criadoEmMS };
+  
+      const btnF = document.createElement('button');
+      btnF.textContent = 'Finalizar';
+      btnF.className = 'bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-semibold';
+      btnF.onclick = () => finalizarPedido(pedido._id);
+      el.appendChild(btnF);
+  
+      pedidosDiv.appendChild(el);
+    });
+  </script>
+  
+</body>
+</html>
