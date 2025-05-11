@@ -129,7 +129,8 @@
           return;
         }
 
-        pedidos.forEach(p => {
+        // Inverte a ordem dos pedidos para que os mais novos fiquem no final
+        pedidos.reverse().forEach(p => {
           // Cria o card com ID único
           const el = document.createElement('div');
           el.id = `pedido-${p._id}`;
@@ -144,7 +145,7 @@
 
           // Span para cronômetro
           const tempoSpan = document.createElement('span');
-          tempoSpan.className = 'text-sm text-blue-600 font_mono';
+          tempoSpan.className = 'text-sm text-blue-600 font-mono';
           el.appendChild(tempoSpan);
 
           // Registra para atualização
