@@ -113,28 +113,14 @@
     }
 
     const cronometros = {};
-    let isPageVisible = true;
 
-    function atualizarCronometros() {
-      if (!isPageVisible) return;
-      Object.keys(cronometros).forEach(id => {
-        const { elemento, criadoEm } = cronometros[id];
+    // Atualiza todos os cronômetros a cada 1 segundo
+    setInterval(() => {
+      Object.values(cronometros).forEach(({ elemento, criadoEm }) => {
         const diff = Math.floor((Date.now() - criadoEm) / 1000);
         elemento.textContent = `⏱️ Tempo: ${formatarTempo(diff)}`;
       });
-      requestAnimationFrame(atualizarCronometros);
-    }
-
-    // Iniciar a animação dos cronômetros
-    requestAnimationFrame(atualizarCronometros);
-
-    // Gerenciar visibilidade da página
-    document.addEventListener('visibilitychange', () => {
-      isPageVisible = !document.hidden;
-      if (isPageVisible) {
-        requestAnimationFrame(atualizarCronometros);
-      }
-    });
+    }, 1000);
 
     async function buscarPedidos() {
       showLoading();
@@ -146,8 +132,8 @@
         const container = document.getElementById('pedidos');
         container.innerHTML = '<h2 class="text-xl font-semibold text-gray-700">Pedidos Recebidos</h2>';
 
-        // Limpar cronômetros antigos
-        Object.keys(cronometros).forEach(id => delete cronometros[id]);
+        // Limpa cronômetros anteriores
+        for (const id in cronometros) delete cronometros[id];
 
         if (data.length === 0) {
           container.innerHTML += '<p class="text-gray-500">Nenhum pedido encontrado</p>';
@@ -157,11 +143,6 @@
         data.forEach(p => {
           const criadoEm = Date.parse(p.criadoEm);
           const finalizadoEm = p.finalizadoEm ? Date.parse(p.finalizadoEm) : null;
-
-          if (isNaN(criadoEm)) {
-            showError(`Data inválida para o pedido ${p.numeroCompra}`);
-            return;
-          }
 
           const el = document.createElement('div');
           el.className = 'flex flex-col sm:flex-row justify-between items-start bg-gray-50 p-3 rounded-lg gap-2';
@@ -186,12 +167,10 @@
             btnF.onclick = () => finalizarPedido(p._id);
             el.appendChild(btnF);
           } else {
-            if (isNaN(finalizadoEm) || finalizadoEm < criadoEm) {
-              tempoSpan.textContent = `✅ Finalizado em 00:00:00`;
-            } else {
-              const diff = Math.floor((finalizadoEm - criadoEm) / 1000);
-              tempoSpan.textContent = `✅ Finalizado em ${formatarTempo(diff)}`;
-            }
+            const diff = finalizadoEm > criadoEm
+              ? Math.floor((finalizadoEm - criadoEm) / 1000)
+              : 0;
+            tempoSpan.textContent = `✅ Finalizado em ${formatarTempo(diff)}`;
             el.appendChild(tempoSpan);
           }
 
