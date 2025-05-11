@@ -43,6 +43,7 @@
     const pedidosDiv = document.getElementById('pedidos');
     let timeOffset = 0; // diferença servidor - cliente
     const cronometros = {};
+    let seenOrders = new Set(); // para notificações
 
     function showLoading() {
       loadingDiv.classList.remove('hidden');
@@ -56,6 +57,16 @@
       errorDiv.textContent = msg;
       errorDiv.classList.remove('hidden');
       setTimeout(() => errorDiv.classList.add('hidden'), 3000);
+    }
+
+    function playNotificationSound() {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = 440;
+      osc.connect(ctx.destination);
+      osc.start();
+      setTimeout(() => { osc.stop(); }, 100);
     }
 
     async function enviarPedido() {
@@ -85,7 +96,6 @@
       try {
         const res = await fetch(`${API}/${id}/finalizar`, { method: 'PATCH' });
         if (!res.ok) throw new Error();
-        // remove do DOM
         document.getElementById(`pedido-${id}`).remove();
       } catch {
         showError('Erro ao finalizar pedido');
@@ -101,7 +111,6 @@
       return `${h}:${m}:${s}`;
     }
 
-    // Atualiza todos os cronômetros a cada segundo
     setInterval(() => {
       const now = Date.now() + timeOffset;
       Object.values(cronometros).forEach(({ elemento, criadoEmMS }) => {
@@ -116,12 +125,9 @@
         const res = await fetch(API);
         if (!res.ok) throw new Error();
         const { serverTimeMS, pedidos } = await res.json();
-        // Sincroniza o relógio do cliente com o servidor
         timeOffset = serverTimeMS - Date.now();
 
-        // Reconstrói a lista
         pedidosDiv.innerHTML = '<h2 class="text-xl font-semibold text-gray-700">Pedidos em Andamento</h2>';
-        // Limpa cronômetros anteriores
         Object.keys(cronometros).forEach(id => delete cronometros[id]);
 
         if (pedidos.length === 0) {
@@ -129,13 +135,19 @@
           return;
         }
 
-        // Inverte a ordem dos pedidos para que os mais novos fiquem no final
+        // Notifica novos pedidos
+        const currentIds = new Set(pedidos.map(p => p._id));
+        pedidos.forEach(p => {
+          if (!seenOrders.has(p._id)) {
+            playNotificationSound();
+          }
+        });
+        seenOrders = currentIds;
+
         pedidos.reverse().forEach(p => {
-          // Cria o card com ID único
           const el = document.createElement('div');
           el.id = `pedido-${p._id}`;
           el.className = 'flex flex-col sm:flex-row justify-between items-start bg-gray-50 p-3 rounded-lg gap-2';
-
           el.innerHTML = `
             <div class="flex-1">
               <div class="text-gray-700 font-semibold">${p.numeroCompra}</div>
@@ -143,18 +155,12 @@
             </div>
           `;
 
-          // Span para cronômetro
           const tempoSpan = document.createElement('span');
           tempoSpan.className = 'text-sm text-blue-600 font-mono';
           el.appendChild(tempoSpan);
 
-          // Registra para atualização
-          cronometros[p._id] = {
-            elemento: tempoSpan,
-            criadoEmMS: p.criadoEmMS
-          };
+          cronometros[p._id] = { elemento: tempoSpan, criadoEmMS: p.criadoEmMS };
 
-          // Botão Finalizar
           const btnF = document.createElement('button');
           btnF.textContent = 'Finalizar';
           btnF.className = 'bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-semibold';
@@ -170,7 +176,6 @@
       }
     }
 
-    // Carrega inicialmente
     buscarPedidos();
   </script>
 </body>
