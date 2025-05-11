@@ -122,8 +122,8 @@
         }
 
         data.forEach(p => {
-          const criadoEm = Date.parse(p.criadoEm); // CORREÇÃO: Usando Date.parse() para garantir timestamp correto
-          const finalizadoEm = p.finalizadoEm ? Date.parse(p.finalizadoEm) : null;
+          const criadoEm = p.criadoEmMS;
+          const finalizadoEm = p.finalizadoEmMS;
 
           const el = document.createElement('div');
           el.className = 'flex flex-col sm:flex-row justify-between items-start bg-gray-50 p-3 rounded-lg gap-2';
@@ -139,12 +139,12 @@
           const tempoSpan = document.createElement('span');
           tempoSpan.className = 'text-sm text-blue-600 font-mono';
 
-          if (!finalizadoEm) {
+          if (finalizadoEm === null) {
             el.appendChild(tempoSpan);
             if (cronometros[p._id]) clearInterval(cronometros[p._id]);
 
             cronometros[p._id] = setInterval(() => {
-              const diff = Math.max(0, Math.floor((Date.now() - criadoEm) / 1000)); // CORREÇÃO: Garante que o tempo não seja negativo
+              const diff = Math.floor((Date.now() - criadoEm) / 1000);
               tempoSpan.textContent = `⏱️ Tempo: ${formatarTempo(diff)}`;
             }, 1000);
 
