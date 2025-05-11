@@ -45,23 +45,23 @@
     const pedidosDiv = document.getElementById('pedidos');
     let timeOffset = 0;
     const cronometros = {};
-
+  
     function showLoading() {
       loadingDiv.classList.remove('hidden');
       enviarBtn.disabled = true;
     }
-
+  
     function hideLoading() {
       loadingDiv.classList.add('hidden');
       enviarBtn.disabled = false;
     }
-
+  
     function showError(msg) {
       errorDiv.textContent = msg;
       errorDiv.classList.remove('hidden');
       setTimeout(() => errorDiv.classList.add('hidden'), 3000);
     }
-
+  
     // Função para tocar o som de notificação
     function playNotificationSound() {
       // Cria um elemento de áudio
@@ -70,7 +70,7 @@
         console.error('Erro ao reproduzir som:', err);
       });
     }
-
+  
     async function enviarPedido() {
       const numero = document.getElementById('numero').value.trim();
       const desc = document.getElementById('descricao').value.trim();
@@ -91,7 +91,7 @@
         hideLoading();
       }
     }
-
+  
     async function finalizarPedido(id) {
       showLoading();
       try {
@@ -105,14 +105,14 @@
         hideLoading();
       }
     }
-
+  
     function formatarTempo(segundos) {
       const h = String(Math.floor(segundos / 3600)).padStart(2, '0');
       const m = String(Math.floor((segundos % 3600) / 60)).padStart(2, '0');
       const s = String(segundos % 60).padStart(2, '0');
       return `${h}:${m}:${s}`;
     }
-
+  
     setInterval(() => {
       const now = Date.now() + timeOffset;
       Object.values(cronometros).forEach(({ elemento, criadoEmMS }) => {
@@ -120,7 +120,7 @@
         elemento.textContent = `⏱️ Tempo: ${formatarTempo(diff)}`;
       });
     }, 1000);
-
+  
     async function buscarPedidos() {
       showLoading();
       try {
@@ -128,15 +128,15 @@
         if (!res.ok) throw new Error();
         const { serverTimeMS, pedidos } = await res.json();
         timeOffset = serverTimeMS - Date.now();
-
+  
         pedidosDiv.innerHTML = '<h2 class="text-xl font-semibold text-gray-700">Pedidos em Andamento</h2>';
         Object.keys(cronometros).forEach(id => delete cronometros[id]);
-
+  
         if (pedidos.length === 0) {
           pedidosDiv.innerHTML += '<p class="text-gray-500">Nenhum pedido em andamento.</p>';
           return;
         }
-
+  
         pedidos.reverse().forEach(adicionarPedidoNaTela);
       } catch {
         showError('Erro ao buscar pedidos');
@@ -144,7 +144,7 @@
         hideLoading();
       }
     }
-
+  
     function adicionarPedidoNaTela(pedido) {
       const el = document.createElement('div');
       el.id = `pedido-${pedido._id}`;
@@ -155,30 +155,32 @@
           <div class="text-gray-700">${pedido.descricao}</div>
         </div>
       `;
-
+  
       const tempoSpan = document.createElement('span');
       tempoSpan.className = 'text-sm text-blue-600 font-mono';
       el.appendChild(tempoSpan);
-
+  
       const criadoEmMS = new Date(pedido.criadoEm).getTime();
       cronometros[pedido._id] = { elemento: tempoSpan, criadoEmMS };
-
+  
       const btnF = document.createElement('button');
       btnF.textContent = 'Finalizar';
       btnF.className = 'bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-semibold';
       btnF.onclick = () => finalizarPedido(pedido._id);
       el.appendChild(btnF);
-
+  
       pedidosDiv.appendChild(el);
     }
-
+  
     // Conexão em tempo real: WebSocket
     socket.on('novo-pedido', pedido => {
+      console.log("Novo pedido recebido:", pedido);  // Log para verificar a chegada do pedido
       playNotificationSound();
       adicionarPedidoNaTela(pedido);
     });
-
+  
     buscarPedidos();
   </script>
+  
 </body>
 </html>
