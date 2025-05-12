@@ -17,6 +17,12 @@
       </a>
     </div>
 
+    <div class="mb-4">
+      <input type="text" id="searchInput" placeholder="Pesquisar pelos últimos 3 dígitos da compra"
+             class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+             maxlength="3" />
+    </div>
+
     <div id="pedidosFinalizados" class="space-y-3">
       <div id="loading" class="text-gray-500">Carregando...</div>
       <div id="error" class="hidden text-red-500"></div>
@@ -26,8 +32,10 @@
   <script>
     const url = 'https://pedidosnordestao.onrender.com/pedidos/finalizados';
     const loadingDiv = document.getElementById('loading');
-    const errorDiv   = document.getElementById('error');
-    const container  = document.getElementById('pedidosFinalizados');
+    const errorDiv = document.getElementById('error');
+    const container = document.getElementById('pedidosFinalizados');
+    const searchInput = document.getElementById('searchInput');
+    let allPedidos = []; // Store all fetched orders
 
     function formatarTempo(segundos) {
       const h = String(Math.floor(segundos / 3600)).padStart(2, '0');
@@ -36,44 +44,73 @@
       return `${h}:${m}:${s}`;
     }
 
+    function renderPedidos(pedidos) {
+      container.innerHTML = ''; // Clear existing orders
+      if (!pedidos || pedidos.length === 0) {
+        container.innerHTML = '<p class="text-gray-500">Nenhum pedido finalizado encontrado.</p>';
+        return;
+      }
+
+      pedidos.forEach(p => {
+        const criadoEm = new Date(p.criadoEm).getTime();
+        const finalizadoEm = new Date(p.finalizadoEm).getTime();
+        const diff = Math.max(0, Math.floor((finalizadoEm - criadoEm) / 1000));
+
+        const el = document.createElement('div');
+        el.className = 'flex justify-between items-center bg-green-50 p-3 rounded-lg';
+
+        el.innerHTML = `
+          <div>
+            <div class="text-gray-800 font-semibold">${p.numeroCompra}</div>
+            <div class="text-gray-700">${p.descricao}</div>
+          </div>
+          <div class="text-sm text-green-600 font-mono">✅ ${formatarTempo(diff)}</div>
+        `;
+
+        container.appendChild(el);
+      });
+    }
+
     async function carregarPedidosFinalizados() {
       try {
         const res = await fetch(url);
-        if (!res.ok) throw new Error();
+        if (!res.ok) throw new Error('Erro ao buscar pedidos finalizados');
         const data = await res.json();
 
         loadingDiv.style.display = 'none';
 
         if (!Array.isArray(data) || data.length === 0) {
-          container.innerHTML += '<p class="text-gray-500">Nenhum pedido finalizado hoje.</p>';
+          container.innerHTML = '<p class="text-gray-500">Nenhum pedido finalizado hoje.</p>';
           return;
         }
 
-        data.forEach(p => {
-          // p.criadoEm e p.finalizadoEm são Date strings serializadas
-          const criadoEm     = new Date(p.criadoEm).getTime();
-          const finalizadoEm = new Date(p.finalizadoEm).getTime();
-          const diff         = Math.max(0, Math.floor((finalizadoEm - criadoEm) / 1000));
-
-          const el = document.createElement('div');
-          el.className = 'flex justify-between items-center bg-green-50 p-3 rounded-lg';
-
-          el.innerHTML = `
-            <div>
-              <div class="text-gray-800 font-semibold">${p.numeroCompra}</div>
-              <div class="text-gray-700">${p.descricao}</div>
-            </div>
-            <div class="text-sm text-green-600 font-mono">✅ ${formatarTempo(diff)}</div>
-          `;
-
-          container.appendChild(el);
-        });
+        allPedidos = data; // Store all orders
+        renderPedidos(allPedidos); // Render initially
       } catch (err) {
         loadingDiv.style.display = 'none';
         errorDiv.textContent = 'Erro ao carregar pedidos finalizados.';
         errorDiv.classList.remove('hidden');
       }
     }
+
+    // Filter orders based on last three digits of numeroCompra
+    function filterPedidos() {
+      const searchTerm = searchInput.value.trim();
+      if (!searchTerm) {
+        renderPedidos(allPedidos); // Show all if search is empty
+        return;
+      }
+
+      const filteredPedidos = allPedidos.filter(p => {
+        const lastThree = p.numeroCompra.slice(-3);
+        return lastThree.includes(searchTerm);
+      });
+
+      renderPedidos(filteredPedidos);
+    }
+
+    // Add input event listener for real-time filtering
+    searchInput.addEventListener('input', filterPedidos);
 
     carregarPedidosFinalizados();
   </script>
