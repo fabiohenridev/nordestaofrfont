@@ -43,7 +43,12 @@
 
   <script>
     const API = 'https://pedidosnordestao.onrender.com/pedidos';
-    const socket = io('https://pedidosnordestao.onrender.com');
+    const socket = io('https://pedidosnordestao.onrender.com', {
+      transports: ['websocket'], // Prefer WebSocket for lower latency
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+    });
     const enviarBtn = document.getElementById('enviarBtn');
     const loadingDiv = document.getElementById('loading');
     const errorDiv = document.getElementById('error');
@@ -51,30 +56,56 @@
     let timeOffset = 0;
     const cronometros = {};
     let tipoSelecionado = null;
-
+    let audioReady = false;
+    const notificationAudio = new Audio('notificacao.mp3');
+  
+    // Preload audio and handle mobile restrictions
+    function preloadAudio() {
+      notificationAudio.load();
+      notificationAudio.muted = true;
+      notificationAudio.play().then(() => {
+        notificationAudio.muted = false;
+        audioReady = true;
+      }).catch((err) => {
+        console.warn('Audio preload failed, user interaction may be required:', err);
+        // Prompt user to enable audio
+        showError('Toque na tela para ativar notificações de áudio');
+      });
+    }
+  
     function showLoading() {
       loadingDiv.classList.remove('hidden');
       enviarBtn.disabled = true;
     }
-
+  
     function hideLoading() {
       loadingDiv.classList.add('hidden');
       enviarBtn.disabled = false;
     }
-
+  
     function showError(msg) {
       errorDiv.textContent = msg;
       errorDiv.classList.remove('hidden');
       setTimeout(() => errorDiv.classList.add('hidden'), 3000);
     }
-
-    function playNotificationSound() {
-      const audio = new Audio('notificacao.mp3');
-      audio.play().catch((err) => {
-        console.error('Erro ao reproduzir som:', err);
-      });
+  
+    function playNotificationSound(serverTime) {
+      if (!audioReady) {
+        console.warn('Audio not ready, attempting to play after user interaction');
+        return;
+      }
+      const now = Date.now() + timeOffset;
+      const targetTime = serverTime + 100; // Play 100ms after server time
+      const delay = Math.max(0, targetTime - now);
+      console.log(`Received notification at ${new Date().toISOString()}, scheduled to play in ${delay}ms`);
+      setTimeout(() => {
+        notificationAudio.play().catch((err) => {
+          console.error('Erro ao reproduzir som:', err);
+          showError('Não foi possível reproduzir o som da notificação');
+        });
+      }, delay);
     }
-
+  
     function selecionarTipo(tipo) {
       tipoSelecionado = tipo;
       document.getElementById('tipoA1').classList.remove('bg-blue-500', 'text-white');
@@ -82,7 +113,7 @@
       document.getElementById('tipoF').classList.remove('bg-blue-500', 'text-white');
       document.getElementById(`tipo${tipo}`).classList.add('bg-blue-500', 'text-white');
     }
-
+  
     async function enviarPedido() {
       const numero = document.getElementById('numero').value.trim();
       const desc = document.getElementById('descricao').value.trim();
@@ -114,7 +145,7 @@
         hideLoading();
       }
     }
-
+  
     async function finalizarPedido(id) {
       showLoading();
       try {
@@ -128,14 +159,14 @@
         hideLoading();
       }
     }
-
+  
     function formatarTempo(segundos) {
       const h = String(Math.floor(segundos / 3600)).padStart(2, '0');
       const m = String(Math.floor((segundos % 3600) / 60)).padStart(2, '0');
       const s = String(segundos % 60).padStart(2, '0');
       return `${h}:${m}:${s}`;
     }
-
+  
     setInterval(() => {
       const now = Date.now() + timeOffset;
       Object.values(cronometros).forEach(({ elemento, criadoEmMS }) => {
@@ -143,7 +174,7 @@
         elemento.textContent = `⏱️ Tempo: ${formatarTempo(diff)}`;
       });
     }, 1000);
-
+  
     async function buscarPedidos() {
       showLoading();
       try {
@@ -151,15 +182,15 @@
         if (!res.ok) throw new Error('Erro ao buscar pedidos');
         const { serverTimeMS, pedidos } = await res.json();
         timeOffset = serverTimeMS - Date.now();
-
+  
         pedidosDiv.innerHTML = '<h2 class="text-xl font-semibold text-gray-700">Pedidos em Andamento</h2>';
         Object.keys(cronometros).forEach(id => delete cronometros[id]);
-
+  
         if (pedidos.length === 0) {
           pedidosDiv.innerHTML += '<p class="text-gray-500">Nenhum pedido em andamento.</p>';
           return;
         }
-
+  
         pedidos.reverse().forEach(adicionarPedidoNaTela);
       } catch (err) {
         showError(err.message || 'Erro ao buscar pedidos');
@@ -167,7 +198,7 @@
         hideLoading();
       }
     }
-
+  
     function adicionarPedidoNaTela(pedido) {
       const el = document.createElement('div');
       el.id = `pedido-${pedido._id}`;
@@ -189,33 +220,58 @@
           <div class="text-gray-700">${pedido.descricao}</div>
         </div>
       `;
-
+  
       const tempoSpan = document.createElement('span');
       tempoSpan.className = 'text-sm text-blue-600 font-mono';
       el.appendChild(tempoSpan);
-
+  
       const criadoEmMS = pedido.criadoEmMS || new Date(pedido.criadoEm).getTime();
       cronometros[pedido._id] = { elemento: tempoSpan, criadoEmMS };
-
+  
       const btnF = document.createElement('button');
       btnF.textContent = 'Finalizar';
       btnF.className = 'bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-semibold';
       btnF.onclick = () => finalizarPedido(pedido._id);
       el.appendChild(btnF);
-
+  
       pedidosDiv.appendChild(el);
     }
-
-    socket.on('novo-pedido', pedido => {
-      console.log("Novo pedido recebido:", pedido);
+  
+    // Handle socket.io connection events
+    socket.on('connect', () => {
+      console.log('Connected to socket.io server');
+      preloadAudio(); // Preload audio on connect
+    });
+  
+    socket.on('disconnect', () => {
+      console.warn('Disconnected from socket.io server');
+      showError('Conexão perdida, reconectando...');
+    });
+  
+    socket.on('novo-pedido', (pedido) => {
+      console.log(`Novo pedido recebido at ${new Date().toISOString()}:`, pedido);
       if (!pedido.tipo) {
         console.warn("Tipo do pedido não definido, usando fallback 'Desconhecido'", pedido);
         pedido.tipo = 'Desconhecido';
       }
-      playNotificationSound();
+      // Use serverTime from pedido if provided, else fallback to current time
+      const serverTime = pedido.serverTime || Date.now();
+      playNotificationSound(serverTime);
       adicionarPedidoNaTela(pedido);
     });
-
+  
+    // Unlock audio on user interaction
+    document.body.addEventListener('click', () => {
+      if (!audioReady) {
+        notificationAudio.muted = true;
+        notificationAudio.play().then(() => {
+          notificationAudio.muted = false;
+          audioReady = true;
+          console.log('Audio unlocked after user interaction');
+        }).catch((err) => console.error('Error unlocking audio:', err));
+      }
+    }, { once: true });
+  
     buscarPedidos();
   </script>
 </body>
