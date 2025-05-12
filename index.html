@@ -173,9 +173,19 @@
       el.id = `pedido-${pedido._id}`;
       el.className = 'flex flex-col sm:flex-row justify-between items-start bg-gray-50 p-3 rounded-lg gap-2';
       const tipo = pedido.tipo || 'Desconhecido';
+      let etiquetaClasses = '';
+      if (tipo === 'A1') {
+        etiquetaClasses = 'bg-green-100 text-green-800';
+      } else if (tipo === 'A2') {
+        etiquetaClasses = 'bg-purple-100 text-purple-800';
+      } else if (tipo === 'F') {
+        etiquetaClasses = 'bg-yellow-100 text-yellow-800';
+      } else {
+        etiquetaClasses = 'bg-gray-100 text-gray-800';
+      }
       el.innerHTML = `
         <div class="flex-1">
-          <div class="text-gray-700 font-semibold">${pedido.numeroCompra} <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">${tipo}</span></div>
+          <div class="text-gray-700 font-semibold">${pedido.numeroCompra} <span class="inline-block ${etiquetaClasses} text-xs px-2 py-1 rounded">${tipo}</span></div>
           <div class="text-gray-700">${pedido.descricao}</div>
         </div>
       `;
