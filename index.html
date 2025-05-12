@@ -122,9 +122,18 @@
       const numero = numeroInput.value.trim();
       const desc = document.getElementById('descricao').value.trim();
       console.log('Enviando pedido com tipo:', tipoSelecionado);
-      if (!numero) return showError('Preencha o número da compra');
-      if (!desc) return showError('Preencha a descrição do pedido');
-      if (!tipoSelecionado) return showError('Selecione o tipo do pedido (A1, A2 ou F)');
+      if (!numero) {
+        showError('Preencha o número da compra');
+        return;
+      }
+      if (!desc) {
+        showError('Preencha a descrição do pedido');
+        return;
+      }
+      if (!tipoSelecionado) {
+        showError('Selecione o tipo do pedido (A1, A2 ou F)');
+        return;
+      }
       showLoading();
       try {
         const res = await fetch(API, {
