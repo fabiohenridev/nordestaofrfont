@@ -20,7 +20,7 @@
     <div class="mb-4">
       <input type="text" id="searchInput" placeholder="Pesquisar pelos últimos 3 dígitos da compra"
              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-             maxlength="3" />
+             maxlength="3" pattern="[0-9]*" inputmode="numeric" />
     </div>
 
     <div id="pedidosFinalizados" class="space-y-3">
@@ -73,8 +73,8 @@
 
     async function carregarPedidosFinalizados() {
       try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('Erro ao buscar pedidos finalizados');
+        const res = await fetch(url, { cache: 'no-store' }); // Avoid caching
+        if (!res.ok) throw new Error(`Erro ao buscar pedidos finalizados: ${res.status}`);
         const data = await res.json();
 
         loadingDiv.style.display = 'none';
@@ -84,25 +84,29 @@
           return;
         }
 
-        allPedidos = data; // Store all orders
+        // Ensure numeroCompra is a string
+        allPedidos = data.map(p => ({
+          ...p,
+          numeroCompra: String(p.numeroCompra || '').padStart(3, '0')
+        }));
         renderPedidos(allPedidos); // Render initially
       } catch (err) {
         loadingDiv.style.display = 'none';
-        errorDiv.textContent = 'Erro ao carregar pedidos finalizados.';
+        errorDiv.textContent = `Erro ao carregar pedidos finalizados: ${err.message}`;
         errorDiv.classList.remove('hidden');
       }
     }
 
     // Filter orders based on last three digits of numeroCompra
     function filterPedidos() {
-      const searchTerm = searchInput.value.trim();
+      const searchTerm = searchInput.value.trim().toLowerCase();
       if (!searchTerm) {
         renderPedidos(allPedidos); // Show all if search is empty
         return;
       }
 
       const filteredPedidos = allPedidos.filter(p => {
-        const lastThree = p.numeroCompra.slice(-3);
+        const lastThree = String(p.numeroCompra).slice(-3).toLowerCase();
         return lastThree.includes(searchTerm);
       });
 
@@ -111,6 +115,11 @@
 
     // Add input event listener for real-time filtering
     searchInput.addEventListener('input', filterPedidos);
+
+    // Ensure only numeric input
+    searchInput.addEventListener('input', () => {
+      searchInput.value = searchInput.value.replace(/[^0-9]/g, '');
+    });
 
     carregarPedidosFinalizados();
   </script>
