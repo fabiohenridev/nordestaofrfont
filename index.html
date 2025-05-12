@@ -55,7 +55,7 @@
     const pedidosDiv = document.getElementById('pedidos');
     const numeroInput = document.getElementById('numero');
     let timeOffset = 0;
-    const Cronometros = {};
+    const cronometros = {};
     let tipoSelecionado = null;
     let audioReady = false;
     const notificationAudio = new Audio('notificacao.mp3');
@@ -112,10 +112,10 @@
 
     function selecionarTipo(tipo) {
       tipoSelecionado = tipo;
-      document.getElementById('tipoA1').classList.remove('bg-green-600', 'text-white');
-      document.getElementById('tipoA2').classList.remove('bg-purple-600', 'text-white');
-      document.getElementById('tipoF').classList.remove('bg-yellow-600', 'text-white');
-      document.getElementById(`tipo${tipo}`).classList.add(tipo === 'A1' ? 'bg-green-600' : tipo === 'A2' ? 'bg-purple-600' : 'bg-yellow-600', 'text-white');
+      document.getElementById('tipoA1').classList.remove('bg-blue-500', 'text-white');
+      document.getElementById('tipoA2').classList.remove('bg-blue-500', 'text-white');
+      document.getElementById('tipoF').classList.remove('bg-blue-500', 'text-white');
+      document.getElementById(`tipo${tipo}`).classList.add('bg-blue-500', 'text-white');
     }
 
     async function enviarPedido() {
@@ -137,9 +137,9 @@
         numeroInput.value = '';
         document.getElementById('descricao').value = '';
         tipoSelecionado = null;
-        document.getElementById('tipoA1').classList.remove('bg-green-600', 'text-white');
-        document.getElementById('tipoA2').classList.remove('bg-purple-600', 'text-white');
-        document.getElementById('tipoF').classList.remove('bg-yellow-600', 'text-white');
+        document.getElementById('tipoA1').classList.remove('bg-blue-500', 'text-white');
+        document.getElementById('tipoA2').classList.remove('bg-blue-500', 'text-white');
+        document.getElementById('tipoF').classList.remove('bg-blue-500', 'text-white');
         document.getElementById('tipoA1').classList.add('bg-gray-200', 'text-gray-700');
         document.getElementById('tipoA2').classList.add('bg-gray-200', 'text-gray-700');
         document.getElementById('tipoF').classList.add('bg-gray-200', 'text-gray-700');
