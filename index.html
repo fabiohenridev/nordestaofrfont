@@ -74,7 +74,6 @@
     let timeOffset = 0;
     const cronometros = {};
     let tipoSelecionado = null;
-    let audioReady = false;
     const notificationAudio = new Audio('notificacao.mp3');
 
     // Restrict input to numbers only
@@ -88,13 +87,15 @@
 
     function preloadAudio() {
       notificationAudio.load();
-      notificationAudio.muted = true;
+      notificationAudio.muted = true; // Mute to allow autoplay
       notificationAudio.play().then(() => {
-        notificationAudio.muted = false;
-        audioReady = true;
+        notificationAudio.muted = false; // Unmute after successful play
+        notificationAudio.currentTime = 0; // Reset to start
+        console.log('Audio preloaded successfully');
       }).catch((err) => {
-        console.warn('Audio preload failed, user interaction may be required:', err);
-        showError('Toque na tela para ativar notificações de áudio');
+        console.warn('Audio preload failed:', err);
+        // Retry preload after a short delay
+        setTimeout(preloadAudio, 500);
       });
     }
 
@@ -115,18 +116,22 @@
     }
 
     function playNotificationSound(serverTime) {
-      if (!audioReady) {
-        console.warn('Audio not ready, attempting to play after user interaction');
-        return;
-      }
       const now = Date.now() + timeOffset;
       const targetTime = serverTime + 100;
       const delay = Math.max(0, targetTime - now);
       console.log(`Received notification at ${new Date().toISOString()}, scheduled to play in ${delay}ms`);
       setTimeout(() => {
+        notificationAudio.currentTime = 0; // Reset audio to start
         notificationAudio.play().catch((err) => {
           console.error('Erro ao reproduzir som:', err);
-          showError('Não foi possível reproduzir o som da notificação');
+          // Retry playback after a short delay
+          setTimeout(() => {
+            notificationAudio.currentTime = 0;
+            notificationAudio.play().catch((retryErr) => {
+              console.error('Retry failed:', retryErr);
+              showError('Não foi possível reproduzir o som da notificação');
+            });
+          }, 500);
         });
       }, delay);
     }
@@ -237,28 +242,28 @@
     }, 1000);
 
     async function buscarPedidos() {
-  showLoading();
-  try {
-    const res = await fetch(API);
-    if (!res.ok) throw new Error('Erro ao buscar pedidos'); // Fixed line
-    const { serverTimeMS, pedidos } = await res.json();
-    timeOffset = serverTimeMS - Date.now();
+      showLoading();
+      try {
+        const res = await fetch(API);
+        if (!res.ok) throw new Error('Erro ao buscar pedidos');
+        const { serverTimeMS, pedidos } = await res.json();
+        timeOffset = serverTimeMS - Date.now();
 
-    pedidosDiv.innerHTML = '<h2 class="text-xl font-semibold text-gray-700">Pedidos em Andamento</h2>';
-    Object.keys(cronometros).forEach(id => delete cronometros[id]);
+        pedidosDiv.innerHTML = '<h2 class="text-xl font-semibold text-gray-700">Pedidos em Andamento</h2>';
+        Object.keys(cronometros).forEach(id => delete cronometros[id]);
 
-    if (pedidos.length === 0) {
-      pedidosDiv.innerHTML += '<p class="text-gray-500">Nenhum pedido em andamento.</p>';
-      return;
+        if (pedidos.length === 0) {
+          pedidosDiv.innerHTML += '<p class="text-gray-500">Nenhum pedido em andamento.</p>';
+          return;
+        }
+
+        pedidos.reverse().forEach(adicionarPedidoNaTela);
+      } catch (err) {
+        showError(err.message || 'Erro ao buscar pedidos');
+      } finally {
+        hideLoading();
+      }
     }
-
-    pedidos.reverse().forEach(adicionarPedidoNaTela);
-  } catch (err) {
-    showError(err.message || 'Erro ao buscar pedidos');
-  } finally {
-    hideLoading();
-  }
-}
 
     function adicionarPedidoNaTela(pedido) {
       const el = document.createElement('div');
@@ -278,7 +283,7 @@
       el.innerHTML = `
         <div class="flex-1">
           <div class="text-gray-700 font-semibold">${pedido.numeroCompra} <span class="inline-block ${etiquetaClasses} text-xs px-2 py-1 rounded">${tipo}</span></div>
-          <div class="text-gray-700">${pedido.descricao}</div>
+          <div class="textalem do pedido</div>
         </div>
       `;
 
@@ -318,17 +323,6 @@
       playNotificationSound(serverTime);
       adicionarPedidoNaTela(pedido);
     });
-
-    document.body.addEventListener('click', () => {
-      if (!audioReady) {
-        notificationAudio.muted = true;
-        notificationAudio.play().then(() => {
-          notificationAudio.muted = false;
-          audioReady = true;
-          console.log('Audio unlocked after user interaction');
-        }).catch((err) => console.error('Error unlocking audio:', err));
-      }
-    }, { once: true });
 
     buscarPedidos();
   </script>
