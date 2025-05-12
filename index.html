@@ -29,7 +29,7 @@
     <div class="mb-4">
       <label class="block text-gray-700 font-medium mb-1">Tipo de pedido <span class="text-red-500">*</span></label>
       <div class="flex gap-2">
-        <button onclick="selecionarTipo('A1')" id="tipoA1" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">A1</button>
+        <button onclick="selecionarTipo('A1')" id="tipoA1" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 Stuart transition">A1</button>
         <button onclick="selecionarTipo('A2')" id="tipoA2" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">A2</button>
         <button onclick="selecionarTipo('F')" id="tipoF" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">F</button>
       </div>
@@ -42,6 +42,12 @@
     </button>
 
     <div class="mb-6 mt-4">
+      <button id="enable-audio" class="hidden bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition">
+        Ativar Notificações de Áudio
+      </button>
+    </div>
+
+    <div class="mb-6">
       <a href="pedidos-finalizados.html" class="text-blue-600">
         Ver pedidos finalizados
       </a>
@@ -71,9 +77,11 @@
     const numeroError = document.getElementById('numero-error');
     const descricaoError = document.getElementById('descricao-error');
     const tipoError = document.getElementById('tipo-error');
+    const enableAudioBtn = document.getElementById('enable-audio');
     let timeOffset = 0;
     const cronometros = {};
     let tipoSelecionado = null;
+    let audioReady = false;
     const notificationAudio = new Audio('notificacao.mp3');
 
     // Restrict input to numbers only
@@ -87,15 +95,16 @@
 
     function preloadAudio() {
       notificationAudio.load();
-      notificationAudio.muted = true; // Mute to allow autoplay
+      notificationAudio.muted = true; // Mute to attempt autoplay
       notificationAudio.play().then(() => {
-        notificationAudio.muted = false; // Unmute after successful play
+        notificationAudio.muted = false; // Unmute after play
         notificationAudio.currentTime = 0; // Reset to start
+        audioReady = true;
+        enableAudioBtn.classList.add('hidden'); // Hide button if audio is ready
         console.log('Audio preloaded successfully');
       }).catch((err) => {
         console.warn('Audio preload failed:', err);
-        // Retry preload after a short delay
-        setTimeout(preloadAudio, 500);
+        enableAudioBtn.classList.remove('hidden'); // Show button to prompt user
       });
     }
 
@@ -116,6 +125,11 @@
     }
 
     function playNotificationSound(serverTime) {
+      if (!audioReady) {
+        console.warn('Audio not ready, user interaction required');
+        enableAudioBtn.classList.remove('hidden'); // Show button if audio fails
+        return;
+      }
       const now = Date.now() + timeOffset;
       const targetTime = serverTime + 100;
       const delay = Math.max(0, targetTime - now);
@@ -124,17 +138,25 @@
         notificationAudio.currentTime = 0; // Reset audio to start
         notificationAudio.play().catch((err) => {
           console.error('Erro ao reproduzir som:', err);
-          // Retry playback after a short delay
-          setTimeout(() => {
-            notificationAudio.currentTime = 0;
-            notificationAudio.play().catch((retryErr) => {
-              console.error('Retry failed:', retryErr);
-              showError('Não foi possível reproduzir o som da notificação');
-            });
-          }, 500);
+          enableAudioBtn.classList.remove('hidden'); // Show button on failure
+          showError('Ative o áudio para notificações');
         });
       }, delay);
     }
+
+    enableAudioBtn.addEventListener('click', () => {
+      notificationAudio.muted = true;
+      notificationAudio.play().then(() => {
+        notificationAudio.muted = false;
+        notificationAudio.currentTime = 0;
+        audioReady = true;
+        enableAudioBtn.classList.add('hidden');
+        console.log('Audio enabled by user interaction');
+      }).catch((err) => {
+        console.error('Error enabling audio:', err);
+        showError('Não foi possível ativar o áudio');
+      });
+    });
 
     function selecionarTipo(tipo) {
       tipoSelecionado = tipo;
@@ -283,7 +305,7 @@
       el.innerHTML = `
         <div class="flex-1">
           <div class="text-gray-700 font-semibold">${pedido.numeroCompra} <span class="inline-block ${etiquetaClasses} text-xs px-2 py-1 rounded">${tipo}</span></div>
-          <div class="textalem do pedido</div>
+          <div class="text-gray-700">${pedido.descricao}</div>
         </div>
       `;
 
