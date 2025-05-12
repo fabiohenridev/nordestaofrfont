@@ -12,18 +12,23 @@
   <div class="max-w-2xl w-full bg-white rounded-lg shadow-lg p-6">
     <h1 class="text-2xl font-bold text-gray-800 mb-6">Fazer Pedido</h1>
 
-    <div class="flex flex-col sm:flex-row gap-3 mb-6">
+    <div class="flex flex-col sm:flex-row gap-3 mb-4">
       <input type="text" id="numero" placeholder="Número da compra"
              class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
       <input type="text" id="descricao" placeholder="Descreva seu pedido"
              class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-      <button onclick="enviarPedido()" id="enviarBtn"
-              class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition disabled:bg-blue-300">
-        Enviar
-      </button>
     </div>
+    <div class="flex gap-2 mb-4">
+      <button onclick="selecionarTipo('A1')" id="tipoA1" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">A1</button>
+      <button onclick="selecionarTipo('A2')" id="tipoA2" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">A2</button>
+      <button onclick="selecionarTipo('F')" id="tipoF" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">F</button>
+    </div>
+    <button onclick="enviarPedido()" id="enviarBtn"
+            class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition disabled:bg-blue-300 w-full sm:w-auto">
+      Enviar
+    </button>
 
-    <div class="mb-6">
+    <div class="mb-6 mt-4">
       <a href="pedidos-finalizados.html" class="text-blue-600">
         Ver pedidos finalizados
       </a>
@@ -45,53 +50,67 @@
     const pedidosDiv = document.getElementById('pedidos');
     let timeOffset = 0;
     const cronometros = {};
-  
+    let tipoSelecionado = null;
+
     function showLoading() {
       loadingDiv.classList.remove('hidden');
       enviarBtn.disabled = true;
     }
-  
+
     function hideLoading() {
       loadingDiv.classList.add('hidden');
       enviarBtn.disabled = false;
     }
-  
+
     function showError(msg) {
       errorDiv.textContent = msg;
       errorDiv.classList.remove('hidden');
       setTimeout(() => errorDiv.classList.add('hidden'), 3000);
     }
-  
-    // Função para tocar o som de notificação
+
     function playNotificationSound() {
-      // Cria um elemento de áudio
-      const audio = new Audio('notificacao.mp3'); // Substitua pela URL do seu arquivo de áudio
+      const audio = new Audio('notificacao.mp3');
       audio.play().catch((err) => {
         console.error('Erro ao reproduzir som:', err);
       });
     }
-  
+
+    function selecionarTipo(tipo) {
+      tipoSelecionado = tipo;
+      document.getElementById('tipoA1').classList.remove('bg-blue-500', 'text-white');
+      document.getElementById('tipoA2').classList.remove('bg-blue-500', 'text-white');
+      document.getElementById('tipoF').classList.remove('bg-blue-500', 'text-white');
+      document.getElementById(`tipo${tipo}`).classList.add('bg-blue-500', 'text-white');
+    }
+
     async function enviarPedido() {
       const numero = document.getElementById('numero').value.trim();
       const desc = document.getElementById('descricao').value.trim();
-      if (!numero || !desc) return showError('Preencha todos os campos');
+      if (!numero || !desc || !tipoSelecionado) return showError('Preencha todos os campos e selecione o tipo');
       showLoading();
       try {
         const res = await fetch(API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ numeroCompra: numero, descricao: desc })
+          body: JSON.stringify({ numeroCompra: numero, descricao: desc, tipo: tipoSelecionado })
         });
         if (!res.ok) throw new Error();
         document.getElementById('numero').value = '';
         document.getElementById('descricao').value = '';
+        tipoSelecionado = null;
+        document.getElementById('tipoA1').classList.remove('bg-blue-500', 'text-white');
+        document.getElementById('tipoA2').classList.remove('bg-blue-500', 'text-white');
+        document.getElementById('tipoF').classList.remove('bg-blue-500', 'text-white');
+        document.getElementById('tipoA1').classList.add('bg-gray-200', 'text-gray-700');
+        document.getElementById('tipoA2').classList.add('bg-gray-200', 'text-gray-700');
+        document.getElementById('tipoF').classList.add('bg-gray-200', 'text-gray-700');
       } catch {
         showError('Erro ao enviar pedido');
       } finally {
         hideLoading();
       }
     }
-  
+
     async function finalizarPedido(id) {
       showLoading();
       try {
@@ -105,14 +124,14 @@
         hideLoading();
       }
     }
-  
+
     function formatarTempo(segundos) {
       const h = String(Math.floor(segundos / 3600)).padStart(2, '0');
       const m = String(Math.floor((segundos % 3600) / 60)).padStart(2, '0');
       const s = String(segundos % 60).padStart(2, '0');
       return `${h}:${m}:${s}`;
     }
-  
+
     setInterval(() => {
       const now = Date.now() + timeOffset;
       Object.values(cronometros).forEach(({ elemento, criadoEmMS }) => {
@@ -120,7 +139,7 @@
         elemento.textContent = `⏱️ Tempo: ${formatarTempo(diff)}`;
       });
     }, 1000);
-  
+
     async function buscarPedidos() {
       showLoading();
       try {
@@ -128,15 +147,15 @@
         if (!res.ok) throw new Error();
         const { serverTimeMS, pedidos } = await res.json();
         timeOffset = serverTimeMS - Date.now();
-  
+
         pedidosDiv.innerHTML = '<h2 class="text-xl font-semibold text-gray-700">Pedidos em Andamento</h2>';
         Object.keys(cronometros).forEach(id => delete cronometros[id]);
-  
+
         if (pedidos.length === 0) {
           pedidosDiv.innerHTML += '<p class="text-gray-500">Nenhum pedido em andamento.</p>';
           return;
         }
-  
+
         pedidos.reverse().forEach(adicionarPedidoNaTela);
       } catch {
         showError('Erro ao buscar pedidos');
@@ -144,43 +163,41 @@
         hideLoading();
       }
     }
-  
+
     function adicionarPedidoNaTela(pedido) {
       const el = document.createElement('div');
       el.id = `pedido-${pedido._id}`;
       el.className = 'flex flex-col sm:flex-row justify-between items-start bg-gray-50 p-3 rounded-lg gap-2';
       el.innerHTML = `
         <div class="flex-1">
-          <div class="text-gray-700 font-semibold">${pedido.numeroCompra}</div>
+          <div class="text-gray-700 font-semibold">${pedido.numeroCompra} <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">${pedido.tipo}</span></div>
           <div class="text-gray-700">${pedido.descricao}</div>
         </div>
       `;
-  
+
       const tempoSpan = document.createElement('span');
       tempoSpan.className = 'text-sm text-blue-600 font-mono';
       el.appendChild(tempoSpan);
-  
-      const criadoEmMS = new Date(pedido.criadoEm).getTime();
+
+      const criadoEmMS = new Date(pedido.criadoEm || pedido.criadoEmMS).getTime();
       cronometros[pedido._id] = { elemento: tempoSpan, criadoEmMS };
-  
+
       const btnF = document.createElement('button');
       btnF.textContent = 'Finalizar';
       btnF.className = 'bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-semibold';
       btnF.onclick = () => finalizarPedido(pedido._id);
       el.appendChild(btnF);
-  
+
       pedidosDiv.appendChild(el);
     }
-  
-    // Conexão em tempo real: WebSocket
+
     socket.on('novo-pedido', pedido => {
-      console.log("Novo pedido recebido:", pedido);  // Log para verificar a chegada do pedido
+      console.log("Novo pedido recebido:", pedido);
       playNotificationSound();
       adicionarPedidoNaTela(pedido);
     });
-  
+
     buscarPedidos();
   </script>
-  
 </body>
 </html>
