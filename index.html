@@ -119,47 +119,52 @@
     }
 
     async function enviarPedido() {
-      const numero = numeroInput.value.trim();
-      const desc = document.getElementById('descricao').value.trim();
-      console.log('Enviando pedido com tipo:', tipoSelecionado);
-      if (!numero) {
-        showError('Preencha o número da compra');
-        return;
-      }
-      if (!desc) {
-        showError('Preencha a descrição do pedido');
-        return;
-      }
-      if (!tipoSelecionado) {
-        showError('É necessário marcar o tipo de pedido (etiqueta)');
-        return;
-      }
-      showLoading();
-      try {
-        const res = await fetch(API, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ numeroCompra: numero, descricao: desc, tipo: tipoSelecionado })
-        });
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.erro || 'Erro ao enviar pedido');
-        }
-        numeroInput.value = '';
-        document.getElementById('descricao').value = '';
-        tipoSelecionado = null;
-        document.getElementById('tipoA1').classList.remove('bg-blue-500', 'text-white');
-        document.getElementById('tipoA2').classList.remove('bg-blue-500', 'text-white');
-        document.getElementById('tipoF').classList.remove('bg-blue-500', 'text-white');
-        document.getElementById('tipoA1').classList.add('bg-gray-200', 'text-gray-700');
-        document.getElementById('tipoA2').classList.add('bg-gray-200', 'text-gray-700');
-        document.getElementById('tipoF').classList.add('bg-gray-200', 'text-gray-700');
-      } catch (err) {
-        showError(err.message || 'Erro ao enviar pedido');
-      } finally {
-        hideLoading();
-      }
+  const numero = numeroInput.value.trim();
+  const desc = document.getElementById('descricao').value.trim();
+
+  // Validações
+  if (!numero) {
+    showError('Preencha o número da compra');
+    return;
+  }
+  if (!desc) {
+    showError('Preencha a descrição do pedido');
+    return;
+  }
+  if (!tipoSelecionado) {
+    showError('Selecione o tipo de pedido (A1, A2 ou F)');
+    return;
+  }
+
+  // Log apenas após validações
+  console.log('Enviando pedido com tipo:', tipoSelecionado);
+  showLoading();
+  try {
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ numeroCompra: numero, descricao: desc, tipo: tipoSelecionado })
+    });
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.erro || 'Erro ao enviar pedido');
     }
+    // Limpar campos após sucesso
+    numeroInput.value = '';
+    document.getElementById('descricao').value = '';
+    tipoSelecionado = null;
+    document.getElementById('tipoA1').classList.remove('bg-blue-500', 'text-white');
+    document.getElementById('tipoA2').classList.remove('bg-blue-500', 'text-white');
+    document.getElementById('tipoF').classList.remove('bg-blue-500', 'text-white');
+    document.getElementById('tipoA1').classList.add('bg-gray-200', 'text-gray-700');
+    document.getElementById('tipoA2').classList.add('bg-gray-200', 'text-gray-700');
+    document.getElementById('tipoF').classList.add('bg-gray-200', 'text-gray-700');
+  } catch (err) {
+    showError(err.message || 'Erro ao enviar pedido');
+  } finally {
+    hideLoading();
+  }
+}
 
     async function finalizarPedido(id) {
       if (!confirm('Deseja realmente finalizar este pedido?')) {
