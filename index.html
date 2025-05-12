@@ -77,10 +77,20 @@
 
     function selecionarTipo(tipo) {
       tipoSelecionado = tipo;
-      document.getElementById('tipoA1').classList.remove('bg-blue-500', 'text-white');
-      document.getElementById('tipoA2').classList.remove('bg-blue-500', 'text-white');
-      document.getElementById('tipoF').classList.remove('bg-blue-500', 'text-white');
-      document.getElementById(`tipo${tipo}`).classList.add('bg-blue-500', 'text-white');
+      const buttons = {
+        'A1': { selected: ['bg-green-600', 'text-white'], unselected: ['bg-gray-200', 'text-gray-700'] },
+        'A2': { selected: ['bg-purple-600', 'text-white'], unselected: ['bg-gray-200', 'text-gray-700'] },
+        'F': { selected: ['bg-yellow-600', 'text-white'], unselected: ['bg-gray-200', 'text-gray-700'] }
+      };
+      ['A1', 'A2', 'F'].forEach(t => {
+        const btn = document.getElementById(`tipo${t}`);
+        btn.classList.remove(...buttons[t].selected, ...buttons[t].unselected);
+        if (t === tipo) {
+          btn.classList.add(...buttons[t].selected);
+        } else {
+          btn.classList.add(...buttons[t].unselected);
+        }
+      });
     }
 
     async function enviarPedido() {
@@ -102,9 +112,9 @@
         document.getElementById('numero').value = '';
         document.getElementById('descricao').value = '';
         tipoSelecionado = null;
-        document.getElementById('tipoA1').classList.remove('bg-blue-500', 'text-white');
-        document.getElementById('tipoA2').classList.remove('bg-blue-500', 'text-white');
-        document.getElementById('tipoF').classList.remove('bg-blue-500', 'text-white');
+        document.getElementById('tipoA1').classList.remove('bg-green-600', 'text-white');
+        document.getElementById('tipoA2').classList.remove('bg-purple-600', 'text-white');
+        document.getElementById('tipoF').classList.remove('bg-yellow-600', 'text-white');
         document.getElementById('tipoA1').classList.add('bg-gray-200', 'text-gray-700');
         document.getElementById('tipoA2').classList.add('bg-gray-200', 'text-gray-700');
         document.getElementById('tipoF').classList.add('bg-gray-200', 'text-gray-700');
@@ -200,7 +210,7 @@
       const btnF = document.createElement('button');
       btnF.textContent = 'Finalizar';
       btnF.className = 'bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-semibold';
-      btnF.onclick = () => finalizarPedido(pedido._id);
+      btnF.onclic = () => finalizarPedido(pedido._id);
       el.appendChild(btnF);
 
       pedidosDiv.appendChild(el);
