@@ -94,7 +94,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ numeroCompra: numero, descricao: desc, tipo: tipoSelecionado })
         });
-        if (!res.ok) throw new Error();
+        if (!res.ok) throw new Error('Erro ao enviar pedido');
         document.getElementById('numero').value = '';
         document.getElementById('descricao').value = '';
         tipoSelecionado = null;
@@ -104,8 +104,8 @@
         document.getElementById('tipoA1').classList.add('bg-gray-200', 'text-gray-700');
         document.getElementById('tipoA2').classList.add('bg-gray-200', 'text-gray-700');
         document.getElementById('tipoF').classList.add('bg-gray-200', 'text-gray-700');
-      } catch {
-        showError('Erro ao enviar pedido');
+      } catch (err) {
+        showError(err.message || 'Erro ao enviar pedido');
       } finally {
         hideLoading();
       }
@@ -115,11 +115,11 @@
       showLoading();
       try {
         const res = await fetch(`${API}/${id}/finalizar`, { method: 'PATCH' });
-        if (!res.ok) throw new Error();
+        if (!res.ok) throw new Error('Erro ao finalizar pedido');
         document.getElementById(`pedido-${id}`).remove();
         delete cronometros[id];
-      } catch {
-        showError('Erro ao finalizar pedido');
+      } catch (err) {
+        showError(err.message || 'Erro ao finalizar pedido');
       } finally {
         hideLoading();
       }
@@ -144,7 +144,7 @@
       showLoading();
       try {
         const res = await fetch(API);
-        if (!res.ok) throw new Error();
+        if (!res.ok) throw new Error('Erro ao buscar pedidos');
         const { serverTimeMS, pedidos } = await res.json();
         timeOffset = serverTimeMS - Date.now();
 
@@ -157,8 +157,8 @@
         }
 
         pedidos.reverse().forEach(adicionarPedidoNaTela);
-      } catch {
-        showError('Erro ao buscar pedidos');
+      } catch (err) {
+        showError(err.message || 'Erro ao buscar pedidos');
       } finally {
         hideLoading();
       }
@@ -168,9 +168,10 @@
       const el = document.createElement('div');
       el.id = `pedido-${pedido._id}`;
       el.className = 'flex flex-col sm:flex-row justify-between items-start bg-gray-50 p-3 rounded-lg gap-2';
+      const tipo = pedido.tipo || 'Desconhecido'; // Fallback para tipo undefined
       el.innerHTML = `
         <div class="flex-1">
-          <div class="text-gray-700 font-semibold">${pedido.numeroCompra} <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">${pedido.tipo}</span></div>
+          <div class="text-gray-700 font-semibold">${pedido.numeroCompra} <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">${tipo}</span></div>
           <div class="text-gray-700">${pedido.descricao}</div>
         </div>
       `;
@@ -179,7 +180,7 @@
       tempoSpan.className = 'text-sm text-blue-600 font-mono';
       el.appendChild(tempoSpan);
 
-      const criadoEmMS = new Date(pedido.criadoEm || pedido.criadoEmMS).getTime();
+      const criadoEmMS = pedido.criadoEmMS || new Date(pedido.criadoEm).getTime();
       cronometros[pedido._id] = { elemento: tempoSpan, criadoEmMS };
 
       const btnF = document.createElement('button');
@@ -193,6 +194,10 @@
 
     socket.on('novo-pedido', pedido => {
       console.log("Novo pedido recebido:", pedido);
+      if (!pedido.tipo) {
+        console.warn("Tipo do pedido não definido, usando fallback 'Desconhecido'");
+        pedido.tipo = 'Desconhecido';
+      }
       playNotificationSound();
       adicionarPedidoNaTela(pedido);
     });
