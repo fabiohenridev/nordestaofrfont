@@ -13,7 +13,7 @@
     <h1 class="text-2xl font-bold text-gray-800 mb-6">Fazer Pedido</h1>
 
     <div class="flex flex-col sm:flex-row gap-3 mb-4">
-      <input type="text" id="numero" placeholder="Número da compra"
+      <input type="number" id="numero" placeholder="Número da compra"
              class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
       <input type="text" id="descricao" placeholder="Descreva seu pedido"
              class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
@@ -44,7 +44,7 @@
   <script>
     const API = 'https://pedidosnordestao.onrender.com/pedidos';
     const socket = io('https://pedidosnordestao.onrender.com', {
-      transports: ['websocket'], // Prefer WebSocket for lower latency
+      transports: ['websocket'],
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
@@ -53,13 +53,18 @@
     const loadingDiv = document.getElementById('loading');
     const errorDiv = document.getElementById('error');
     const pedidosDiv = document.getElementById('pedidos');
+    const numeroInput = document.getElementById('numero');
     let timeOffset = 0;
     const cronometros = {};
     let tipoSelecionado = null;
     let audioReady = false;
     const notificationAudio = new Audio('notificacao.mp3');
-  
-    // Preload audio and handle mobile restrictions
+
+    // Restrict input to numbers only
+    numeroInput.addEventListener('input', () => {
+      numeroInput.value = numeroInput.value.replace(/[^0-9]/g, '');
+    });
+
     function preloadAudio() {
       notificationAudio.load();
       notificationAudio.muted = true;
@@ -68,34 +73,33 @@
         audioReady = true;
       }).catch((err) => {
         console.warn('Audio preload failed, user interaction may be required:', err);
-        // Prompt user to enable audio
         showError('Toque na tela para ativar notificações de áudio');
       });
     }
-  
+
     function showLoading() {
       loadingDiv.classList.remove('hidden');
       enviarBtn.disabled = true;
     }
-  
+
     function hideLoading() {
       loadingDiv.classList.add('hidden');
       enviarBtn.disabled = false;
     }
-  
+
     function showError(msg) {
       errorDiv.textContent = msg;
       errorDiv.classList.remove('hidden');
       setTimeout(() => errorDiv.classList.add('hidden'), 3000);
     }
-  
+
     function playNotificationSound(serverTime) {
       if (!audioReady) {
         console.warn('Audio not ready, attempting to play after user interaction');
         return;
       }
       const now = Date.now() + timeOffset;
-      const targetTime = serverTime + 100; // Play 100ms after server time
+      const targetTime = serverTime + 100;
       const delay = Math.max(0, targetTime - now);
       console.log(`Received notification at ${new Date().toISOString()}, scheduled to play in ${delay}ms`);
       setTimeout(() => {
@@ -105,7 +109,7 @@
         });
       }, delay);
     }
-  
+
     function selecionarTipo(tipo) {
       tipoSelecionado = tipo;
       document.getElementById('tipoA1').classList.remove('bg-blue-500', 'text-white');
@@ -113,9 +117,9 @@
       document.getElementById('tipoF').classList.remove('bg-blue-500', 'text-white');
       document.getElementById(`tipo${tipo}`).classList.add('bg-blue-500', 'text-white');
     }
-  
+
     async function enviarPedido() {
-      const numero = document.getElementById('numero').value.trim();
+      const numero = numeroInput.value.trim();
       const desc = document.getElementById('descricao').value.trim();
       console.log('Enviando pedido com tipo:', tipoSelecionado);
       if (!numero || !desc || !tipoSelecionado) return showError('Preencha todos os campos e selecione o tipo');
@@ -130,7 +134,7 @@
           const errorData = await res.json();
           throw new Error(errorData.erro || 'Erro ao enviar pedido');
         }
-        document.getElementById('numero').value = '';
+        numeroInput.value = '';
         document.getElementById('descricao').value = '';
         tipoSelecionado = null;
         document.getElementById('tipoA1').classList.remove('bg-blue-500', 'text-white');
@@ -145,11 +149,10 @@
         hideLoading();
       }
     }
-  
+
     async function finalizarPedido(id) {
-      // Show confirmation dialog
       if (!confirm('Deseja realmente finalizar este pedido?')) {
-        return; // Abort if user cancels
+        return;
       }
       showLoading();
       try {
@@ -163,14 +166,14 @@
         hideLoading();
       }
     }
-  
+
     function formatarTempo(segundos) {
       const h = String(Math.floor(segundos / 3600)).padStart(2, '0');
       const m = String(Math.floor((segundos % 3600) / 60)).padStart(2, '0');
       const s = String(segundos % 60).padStart(2, '0');
       return `${h}:${m}:${s}`;
     }
-  
+
     setInterval(() => {
       const now = Date.now() + timeOffset;
       Object.values(cronometros).forEach(({ elemento, criadoEmMS }) => {
@@ -178,7 +181,7 @@
         elemento.textContent = `⏱️ Tempo: ${formatarTempo(diff)}`;
       });
     }, 1000);
-  
+
     async function buscarPedidos() {
       showLoading();
       try {
@@ -186,15 +189,15 @@
         if (!res.ok) throw new Error('Erro ao buscar pedidos');
         const { serverTimeMS, pedidos } = await res.json();
         timeOffset = serverTimeMS - Date.now();
-  
+
         pedidosDiv.innerHTML = '<h2 class="text-xl font-semibold text-gray-700">Pedidos em Andamento</h2>';
         Object.keys(cronometros).forEach(id => delete cronometros[id]);
-  
+
         if (pedidos.length === 0) {
           pedidosDiv.innerHTML += '<p class="text-gray-500">Nenhum pedido em andamento.</p>';
           return;
         }
-  
+
         pedidos.reverse().forEach(adicionarPedidoNaTela);
       } catch (err) {
         showError(err.message || 'Erro ao buscar pedidos');
@@ -202,7 +205,7 @@
         hideLoading();
       }
     }
-  
+
     function adicionarPedidoNaTela(pedido) {
       const el = document.createElement('div');
       el.id = `pedido-${pedido._id}`;
@@ -224,47 +227,44 @@
           <div class="text-gray-700">${pedido.descricao}</div>
         </div>
       `;
-  
+
       const tempoSpan = document.createElement('span');
       tempoSpan.className = 'text-sm text-blue-600 font-mono';
       el.appendChild(tempoSpan);
-  
+
       const criadoEmMS = pedido.criadoEmMS || new Date(pedido.criadoEm).getTime();
       cronometros[pedido._id] = { elemento: tempoSpan, criadoEmMS };
-  
+
       const btnF = document.createElement('button');
       btnF.textContent = 'Finalizar';
       btnF.className = 'bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-semibold';
       btnF.onclick = () => finalizarPedido(pedido._id);
       el.appendChild(btnF);
-  
+
       pedidosDiv.appendChild(el);
     }
-  
-    // Handle socket.io connection events
+
     socket.on('connect', () => {
       console.log('Connected to socket.io server');
-      preloadAudio(); // Preload audio on connect
+      preloadAudio();
     });
-  
+
     socket.on('disconnect', () => {
       console.warn('Disconnected from socket.io server');
       showError('Conexão perdida, reconectando...');
     });
-  
+
     socket.on('novo-pedido', (pedido) => {
       console.log(`Novo pedido recebido at ${new Date().toISOString()}:`, pedido);
       if (!pedido.tipo) {
         console.warn("Tipo do pedido não definido, usando fallback 'Desconhecido'", pedido);
         pedido.tipo = 'Desconhecido';
       }
-      // Use serverTime from pedido if provided, else fallback to current time
       const serverTime = pedido.serverTime || Date.now();
       playNotificationSound(serverTime);
       adicionarPedidoNaTela(pedido);
     });
-  
-    // Unlock audio on user interaction
+
     document.body.addEventListener('click', () => {
       if (!audioReady) {
         notificationAudio.muted = true;
@@ -275,7 +275,7 @@
         }).catch((err) => console.error('Error unlocking audio:', err));
       }
     }, { once: true });
-  
+
     buscarPedidos();
   </script>
 </body>
