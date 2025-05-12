@@ -147,6 +147,10 @@
     }
   
     async function finalizarPedido(id) {
+      // Show confirmation dialog
+      if (!confirm('Deseja realmente finalizar este pedido?')) {
+        return; // Abort if user cancels
+      }
       showLoading();
       try {
         const res = await fetch(`${API}/${id}/finalizar`, { method: 'PATCH' });
