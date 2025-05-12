@@ -59,7 +59,6 @@
         const el = document.createElement('div');
         el.className = 'flex justify-between items-center bg-green-50 p-3 rounded-lg';
 
-        // Include tipo in the display
         const tipo = p.tipo || 'Desconhecido';
         let etiquetaClasses = '';
         if (tipo === 'A1') {
@@ -90,7 +89,11 @@
         if (!res.ok) throw new Error(`Erro ao buscar pedidos finalizados: ${res.status}`);
         const data = await res.json();
 
+        console.log('Pedidos recebidos:', data); // Log para depuração
+
         loadingDiv.style.display = 'none';
+        errorDiv.classList.add('hidden'); // Esconde erro anterior
+        allPedidos = []; // Limpa pedidos antigos
 
         if (!Array.isArray(data) || data.length === 0) {
           container.innerHTML = '<p class="text-gray-500">Nenhum pedido finalizado hoje.</p>';
