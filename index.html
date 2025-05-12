@@ -86,6 +86,7 @@
     async function enviarPedido() {
       const numero = document.getElementById('numero').value.trim();
       const desc = document.getElementById('descricao').value.trim();
+      console.log('Enviando pedido com tipo:', tipoSelecionado);
       if (!numero || !desc || !tipoSelecionado) return showError('Preencha todos os campos e selecione o tipo');
       showLoading();
       try {
@@ -94,7 +95,10 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ numeroCompra: numero, descricao: desc, tipo: tipoSelecionado })
         });
-        if (!res.ok) throw new Error('Erro ao enviar pedido');
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.erro || 'Erro ao enviar pedido');
+        }
         document.getElementById('numero').value = '';
         document.getElementById('descricao').value = '';
         tipoSelecionado = null;
@@ -168,7 +172,7 @@
       const el = document.createElement('div');
       el.id = `pedido-${pedido._id}`;
       el.className = 'flex flex-col sm:flex-row justify-between items-start bg-gray-50 p-3 rounded-lg gap-2';
-      const tipo = pedido.tipo || 'Desconhecido'; // Fallback para tipo undefined
+      const tipo = pedido.tipo || 'Desconhecido';
       el.innerHTML = `
         <div class="flex-1">
           <div class="text-gray-700 font-semibold">${pedido.numeroCompra} <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">${tipo}</span></div>
@@ -195,7 +199,7 @@
     socket.on('novo-pedido', pedido => {
       console.log("Novo pedido recebido:", pedido);
       if (!pedido.tipo) {
-        console.warn("Tipo do pedido não definido, usando fallback 'Desconhecido'");
+        console.warn("Tipo do pedido não definido, usando fallback 'Desconhecido'", pedido);
         pedido.tipo = 'Desconhecido';
       }
       playNotificationSound();
