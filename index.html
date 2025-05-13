@@ -59,6 +59,35 @@
     </div>
   </div>
 
+  <!-- Modal para edição -->
+  <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md">
+      <h2 class="text-xl font-bold text-gray-800 mb-4">Editar Pedido</h2>
+      <div class="mb-4">
+        <label for="editNumero" class="block text-gray-700 font-medium mb-1">Número da compra <span class="text-red-500">*</span></label>
+        <input type="number" id="editNumero" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+        <p id="editNumero-error" class="text-red-500 text-sm mt-1 hidden">Preencha o número da compra</p>
+      </div>
+      <div class="mb-4">
+        <label for="editDescricao" class="block text-gray-700 font-medium mb-1">Descrição <span class="text-red-500">*</span></label>
+        <input type="text" id="editDescricao" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+        <p id="editDescricao-error" class="text-red-500 text-sm mt-1 hidden">Preencha a descrição do pedido</p>
+      </div>
+      <div class="mb-4">
+        <label class="block text-gray-700 font-medium mb-1">Tipo de pedido <span class="text-red-500">*</span></label>
+        <div class="flex gap-2">
+          <button onclick="selecionarTipoEdit('A')" id="editTipoA" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">A</button>
+          <button onclick="selecionarTipoEdit('F')" id="editTipoF" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">F</button>
+        </div>
+        <p id="editTipo-error" class="text-red-500 text-sm mt-1 hidden">Selecione o tipo de pedido (A ou F)</p>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button onclick="fecharModal()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition">Cancelar</button>
+        <button onclick="salvarEdicao()" id="salvarEditBtn" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition disabled:bg-blue-300" disabled>Salvar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const API = 'https://pedidosnordestao.onrender.com/pedidos';
     const socket = io('https://pedidosnordestao.onrender.com', {
@@ -77,9 +106,18 @@
     const descricaoError = document.getElementById('descricao-error');
     const tipoError = document.getElementById('tipo-error');
     const enableAudioBtn = document.getElementById('enable-audio');
+    const editModal = document.getElementById('editModal');
+    const editNumeroInput = document.getElementById('editNumero');
+    const editDescricaoInput = document.getElementById('editDescricao');
+    const editNumeroError = document.getElementById('editNumero-error');
+    const editDescricaoError = document.getElementById('editDescricao-error');
+    const editTipoError = document.getElementById('editTipo-error');
+    const salvarEditBtn = document.getElementById('salvarEditBtn');
     let timeOffset = 0;
     const cronometros = {};
     let tipoSelecionado = null;
+    let tipoSelecionadoEdit = null;
+    let editPedidoId = null;
     let audioReady = false;
     const notificationAudio = new Audio('notificacao.mp3');
 
@@ -89,8 +127,15 @@
       validarFormulario();
     });
 
+    // Restrict edit input to numbers only
+    editNumeroInput.addEventListener('input', () => {
+      editNumeroInput.value = editNumeroInput.value.replace(/[^0-9]/g, '');
+      validarFormularioEdit();
+    });
+
     // Validar descrição e tipo em tempo real
     descricaoInput.addEventListener('input', validarFormulario);
+    editDescricaoInput.addEventListener('input', validarFormularioEdit);
 
     function preloadAudio() {
       notificationAudio.load();
@@ -110,11 +155,13 @@
     function showLoading() {
       loadingDiv.classList.remove('hidden');
       enviarBtn.disabled = true;
+      salvarEditBtn.disabled = true;
     }
 
     function hideLoading() {
       loadingDiv.classList.add('hidden');
       validarFormulario();
+      validarFormularioEdit();
     }
 
     function showError(msg) {
@@ -166,11 +213,27 @@
       validarFormulario();
     }
 
+    function selecionarTipoEdit(tipo) {
+      tipoSelecionadoEdit = tipo;
+      document.getElementById('editTipoA').classList.remove('bg-blue-500', 'text-white');
+      document.getElementById('editTipoF').classList.remove('bg-blue-500', 'text-white');
+      document.getElementById(`editTipo${tipo}`).classList.add('bg-blue-500', 'text-white');
+      editTipoError.classList.add('hidden');
+      validarFormularioEdit();
+    }
+
     function validarFormulario() {
       const numero = numeroInput.value.trim();
       const desc = descricaoInput.value.trim();
       const isValid = numero && desc && tipoSelecionado;
       enviarBtn.disabled = !isValid;
+    }
+
+    function validarFormularioEdit() {
+      const numero = editNumeroInput.value.trim();
+      const desc = editDescricaoInput.value.trim();
+      const isValid = numero && desc && tipoSelecionadoEdit;
+      salvarEditBtn.disabled = !isValid;
     }
 
     async function enviarPedido() {
@@ -222,6 +285,77 @@
         document.getElementById('tipoF').classList.add('bg-gray-200', 'text-gray-700');
       } catch (err) {
         showError(err.message || 'Erro ao enviar pedido');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    function abrirModal(pedidoId, numeroCompra, descricao, tipo) {
+      editPedidoId = pedidoId;
+      editNumeroInput.value = numeroCompra;
+      editDescricaoInput.value = descricao;
+      tipoSelecionadoEdit = tipo;
+      document.getElementById('editTipoA').classList.remove('bg-blue-500', 'text-white');
+      document.getElementById('editTipoF').classList.remove('bg-blue-500', 'text-white');
+      document.getElementById(`editTipo${tipo}`).classList.add('bg-blue-500', 'text-white');
+      editModal.classList.remove('hidden');
+      validarFormularioEdit();
+    }
+
+    function fecharModal() {
+      editModal.classList.add('hidden');
+      editNumeroInput.value = '';
+      editDescricaoInput.value = '';
+      tipoSelecionadoEdit = null;
+      document.getElementById('editTipoA').classList.remove('bg-blue-500', 'text-white');
+      document.getElementById('editTipoF').classList.remove('bg-blue-500', 'text-white');
+      editNumeroError.classList.add('hidden');
+      editDescricaoError.classList.add('hidden');
+      editTipoError.classList.add('hidden');
+    }
+
+    async function salvarEdicao() {
+      const numero = editNumeroInput.value.trim();
+      const desc = editDescricaoInput.value.trim();
+
+      // Validações
+      let hasError = false;
+      if (!numero) {
+        editNumeroError.classList.remove('hidden');
+        hasError = true;
+      } else {
+        editNumeroError.classList.add('hidden');
+      }
+      if (!desc) {
+        editDescricaoError.classList.remove('hidden');
+        hasError = true;
+      } else {
+        editDescricaoError.classList.add('hidden');
+      }
+      if (!tipoSelecionadoEdit) {
+        editTipoError.classList.remove('hidden');
+        hasError = true;
+      } else {
+        editTipoError.classList.add('hidden');
+      }
+      if (hasError) {
+        return;
+      }
+
+      showLoading();
+      try {
+        const res = await fetch(`${API}/${editPedidoId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ numeroCompra: numero, descricao: desc, tipo: tipoSelecionadoEdit })
+        });
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.erro || 'Erro ao editar pedido');
+        }
+        fecharModal();
+      } catch (err) {
+        showError(err.message || 'Erro ao editar pedido');
       } finally {
         hideLoading();
       }
@@ -310,6 +444,12 @@
       const criadoEmMS = pedido.criadoEmMS || new Date(pedido.criadoEm).getTime();
       cronometros[pedido._id] = { elemento: tempoSpan, criadoEmMS };
 
+      const btnEdit = document.createElement('button');
+      btnEdit.innerHTML = '✏️';
+      btnEdit.className = 'bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold';
+      btnEdit.onclick = () => abrirModal(pedido._id, pedido.numeroCompra, pedido.descricao, pedido.tipo);
+      el.appendChild(btnEdit);
+
       const btnF = document.createElement('button');
       btnF.textContent = 'Finalizar';
       btnF.className = 'bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-semibold';
@@ -337,6 +477,15 @@
       }
       const serverTime = pedido.serverTime || Date.now();
       playNotificationSound(serverTime);
+      adicionarPedidoNaTela(pedido);
+    });
+
+    socket.on('pedido-atualizado', (pedido) => {
+      console.log(`Pedido atualizado recebido at ${new Date().toISOString()}:`, pedido);
+      const existingPedido = document.getElementById(`pedido-${pedido._id}`);
+      if (existingPedido) {
+        existingPedido.remove();
+      }
       adicionarPedidoNaTela(pedido);
     });
 
