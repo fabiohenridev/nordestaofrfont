@@ -29,11 +29,10 @@
     <div class="mb-4">
       <label class="block text-gray-700 font-medium mb-1">Tipo de pedido <span class="text-red-500">*</span></label>
       <div class="flex gap-2">
-        <button onclick="selecionarTipo('A1')" id="tipoA1" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 Stuart transition">A1</button>
-        <button onclick="selecionarTipo('A2')" id="tipoA2" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">A2</button>
+        <button onclick="selecionarTipo('A')" id="tipoA" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">A</button>
         <button onclick="selecionarTipo('F')" id="tipoF" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">F</button>
       </div>
-      <p id="tipo-error" class="text-red-500 text-sm mt-1 hidden">Selecione o tipo de pedido (A1, A2 ou F)</p>
+      <p id="tipo-error" class="text-red-500 text-sm mt-1 hidden">Selecione o tipo de pedido (A ou F)</p>
     </div>
     <button onclick="enviarPedido()" id="enviarBtn"
             class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition disabled:bg-blue-300 w-full sm:w-auto"
@@ -95,16 +94,16 @@
 
     function preloadAudio() {
       notificationAudio.load();
-      notificationAudio.muted = true; // Mute to attempt autoplay
+      notificationAudio.muted = true;
       notificationAudio.play().then(() => {
-        notificationAudio.muted = false; // Unmute after play
-        notificationAudio.currentTime = 0; // Reset to start
+        notificationAudio.muted = false;
+        notificationAudio.currentTime = 0;
         audioReady = true;
-        enableAudioBtn.classList.add('hidden'); // Hide button if audio is ready
+        enableAudioBtn.classList.add('hidden');
         console.log('Audio preloaded successfully');
       }).catch((err) => {
         console.warn('Audio preload failed:', err);
-        enableAudioBtn.classList.remove('hidden'); // Show button to prompt user
+        enableAudioBtn.classList.remove('hidden');
       });
     }
 
@@ -127,7 +126,7 @@
     function playNotificationSound(serverTime) {
       if (!audioReady) {
         console.warn('Audio not ready, user interaction required');
-        enableAudioBtn.classList.remove('hidden'); // Show button if audio fails
+        enableAudioBtn.classList.remove('hidden');
         return;
       }
       const now = Date.now() + timeOffset;
@@ -135,10 +134,10 @@
       const delay = Math.max(0, targetTime - now);
       console.log(`Received notification at ${new Date().toISOString()}, scheduled to play in ${delay}ms`);
       setTimeout(() => {
-        notificationAudio.currentTime = 0; // Reset audio to start
+        notificationAudio.currentTime = 0;
         notificationAudio.play().catch((err) => {
           console.error('Erro ao reproduzir som:', err);
-          enableAudioBtn.classList.remove('hidden'); // Show button on failure
+          enableAudioBtn.classList.remove('hidden');
           showError('Ative o áudio para notificações');
         });
       }, delay);
@@ -160,8 +159,7 @@
 
     function selecionarTipo(tipo) {
       tipoSelecionado = tipo;
-      document.getElementById('tipoA1').classList.remove('bg-blue-500', 'text-white');
-      document.getElementById('tipoA2').classList.remove('bg-blue-500', 'text-white');
+      document.getElementById('tipoA').classList.remove('bg-blue-500', 'text-white');
       document.getElementById('tipoF').classList.remove('bg-blue-500', 'text-white');
       document.getElementById(`tipo${tipo}`).classList.add('bg-blue-500', 'text-white');
       tipoError.classList.add('hidden');
@@ -218,11 +216,9 @@
         numeroInput.value = '';
         descricaoInput.value = '';
         tipoSelecionado = null;
-        document.getElementById('tipoA1').classList.remove('bg-blue-500', 'text-white');
-        document.getElementById('tipoA2').classList.remove('bg-blue-500', 'text-white');
+        document.getElementById('tipoA').classList.remove('bg-blue-500', 'text-white');
         document.getElementById('tipoF').classList.remove('bg-blue-500', 'text-white');
-        document.getElementById('tipoA1').classList.add('bg-gray-200', 'text-gray-700');
-        document.getElementById('tipoA2').classList.add('bg-gray-200', 'text-gray-700');
+        document.getElementById('tipoA').classList.add('bg-gray-200', 'text-gray-700');
         document.getElementById('tipoF').classList.add('bg-gray-200', 'text-gray-700');
       } catch (err) {
         showError(err.message || 'Erro ao enviar pedido');
@@ -293,10 +289,8 @@
       el.className = 'flex flex-col sm:flex-row justify-between items-start bg-gray-50 p-3 rounded-lg gap-2';
       const tipo = pedido.tipo || 'Desconhecido';
       let etiquetaClasses = '';
-      if (tipo === 'A1') {
+      if (tipo === 'A') {
         etiquetaClasses = 'bg-green-100 text-green-800';
-      } else if (tipo === 'A2') {
-        etiquetaClasses = 'bg-purple-100 text-purple-800';
       } else if (tipo === 'F') {
         etiquetaClasses = 'bg-yellow-100 text-yellow-800';
       } else {
